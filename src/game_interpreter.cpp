@@ -6451,6 +6451,97 @@ lcf::rpg::SaveEventExecState& Game_Interpreter_Inspector::GetExecStateUnsafe(Gam
 	return ce.interpreter->_state;
 }
 
+void Game_Interpreter_Inspector::RefreshMapEventCommands(Game_Interpreter& interpreter, const lcf::rpg::Map& map) {
+	using EventCommandCode = lcf::rpg::EventCommand::Code;
+	for (auto& frame : interpreter._state.stack) {
+		if (frame.event_id <= 0 || frame.maniac_event_page_id <= 0) {
+			continue;
+		}
+
+		auto event = std::find_if(map.events.begin(), map.events.end(), [&frame](const lcf::rpg::Event& source) {
+			return source.ID == frame.event_id;
+		});
+		if (event == map.events.end()) {
+			continue;
+		}
+
+		auto page = std::find_if(event->pages.begin(), event->pages.end(), [&frame](const lcf::rpg::EventPage& source) {
+			return source.ID == frame.maniac_event_page_id;
+		});
+		if (page != event->pages.end()) {
+			const bool message_active = Game_Message::IsMessageActive();
+			// Keep the current command index and runtime state; only replace the
+			// copied commands so later messages in this event use the new catalog.
+			frame.commands = page->event_commands;
+			Output::Debug("MTool active event refresh: event={}, page={}, command={}, active={}, stack={}", frame.event_id, frame.maniac_event_page_id, frame.current_command, message_active, interpreter._state.stack.size());
+
+			if (interpreter._state.stack.empty()
+					|| &frame != &interpreter._state.stack.back()
+					|| !message_active) {
+				continue;
+			}
+
+			const int cursor = std::min(frame.current_command, static_cast<int>(frame.commands.size()));
+			int choice_index = -1;
+			if (cursor < static_cast<int>(frame.commands.size())
+					&& static_cast<EventCommandCode>(frame.commands[cursor].code) == EventCommandCode::ShowChoice) {
+				choice_index = cursor;
+			} else if (cursor > 0
+					&& static_cast<EventCommandCode>(frame.commands[cursor - 1].code) == EventCommandCode::ShowChoice) {
+				choice_index = cursor - 1;
+			}
+
+			int message_index = (choice_index >= 0 ? choice_index : cursor) - 1;
+			std::vector<std::string> reversed_message_lines;
+			while (message_index >= 0) {
+				auto code = static_cast<EventCommandCode>(frame.commands[message_index].code);
+				if (code == EventCommandCode::MessageOptions || code == EventCommandCode::ChangeFaceGraphic) {
+					--message_index;
+					continue;
+				}
+				if (code == EventCommandCode::ShowMessage || code == EventCommandCode::ShowMessage_2) {
+					reversed_message_lines.push_back(ToString(frame.commands[message_index].string));
+					if (code == EventCommandCode::ShowMessage) {
+						break;
+					}
+					--message_index;
+					continue;
+				}
+				break;
+			}
+			if (reversed_message_lines.empty() || message_index < 0
+					|| static_cast<EventCommandCode>(frame.commands[message_index].code) != EventCommandCode::ShowMessage) {
+				continue;
+			}
+
+			std::vector<std::string> active_lines(reversed_message_lines.rbegin(), reversed_message_lines.rend());
+			if (choice_index >= 0) {
+				const int choice_indent = frame.commands[choice_index].indent;
+				for (int i = choice_index + 1; i < static_cast<int>(frame.commands.size()); ++i) {
+					auto code = static_cast<EventCommandCode>(frame.commands[i].code);
+					if (code == EventCommandCode::ShowChoiceEnd && frame.commands[i].indent == choice_indent) {
+						break;
+					}
+					if (code == EventCommandCode::ShowChoiceOption
+							&& frame.commands[i].indent == choice_indent
+							&& !frame.commands[i].parameters.empty()
+							&& frame.commands[i].parameters[0] < 4) {
+						active_lines.push_back(ToString(frame.commands[i].string));
+					}
+				}
+			}
+			const bool refreshed = Game_Message::RefreshActiveTranslation(active_lines);
+			Output::Debug("MTool active event text refresh: event={}, lines={}, refreshed={}", frame.event_id, active_lines.size(), refreshed);
+		}
+	}
+}
+
+void Game_Interpreter_Inspector::RefreshMapEventCommands(Game_Event& event, const lcf::rpg::Map& map) {
+	if (event.interpreter) {
+		RefreshMapEventCommands(*event.interpreter, map);
+	}
+}
+
 bool Game_Interpreter_Inspector::IsInActiveExcecution(Game_Event const& ev, bool background_only) {
 	if (!background_only) {
 		//TODO

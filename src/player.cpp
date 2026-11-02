@@ -150,6 +150,7 @@ namespace {
 
 	// Overwritten by --encoding
 	std::string forced_encoding;
+	bool mtool_hot_reload_enabled = false;
 
 	FileRequestBinding system_request_id;
 	FileRequestBinding save_request_id;
@@ -259,6 +260,7 @@ void Player::MainLoop() {
 
 		Scene::old_instances.clear();
 		Scene::instance->MainFunction();
+		Player::translation.UpdateHotReload();
 
 		Graphics::GetMessageOverlay().Update();
 
@@ -458,6 +460,7 @@ Game_Config Player::ParseCommandLine() {
 	start_map_id = -1;
 	no_rtp_flag = false;
 	no_audio_flag = false;
+	mtool_hot_reload_enabled = false;
 	is_easyrpg_project = false;
 	Game_Battle::battle_test.enabled = false;
 
@@ -583,6 +586,10 @@ Game_Config Player::ParseCommandLine() {
 				}
 				FileFinder::SetLanguageFilesystem(langfs);
 			}
+			continue;
+		}
+		if (cp.ParseNext(arg, 0, "--mtool-hot-reload")) {
+			mtool_hot_reload_enabled = true;
 			continue;
 		}
 		if (cp.ParseNext(arg, 1, "--save-path")) {
@@ -740,6 +747,7 @@ void Player::CreateGameObjects() {
 
 	// Check for translation-related directories and load language names.
 	translation.InitTranslations();
+	translation.SetHotReloadEnabled(mtool_hot_reload_enabled);
 
 	std::string game_path = FileFinder::GetFullFilesystemPath(FileFinder::Game());
 	std::string save_path = FileFinder::GetFullFilesystemPath(FileFinder::Save());
@@ -1502,6 +1510,8 @@ Engine options:
  --language LANG      Load the game translation in language/LANG folder.
  --language-path PATH Use the translations at PATH instead of the translations
                       in the language folder.
+ --mtool-hot-reload   Watch the language path for MTool's .mtool-refresh marker
+                      and reload updated translations in the running game.
  --load-game-id N     Skip the title scene and load SaveN.lsd (N is padded to
                       two digits).
  --log-file FILE      Path to the logfile. The Player will write diagnostic

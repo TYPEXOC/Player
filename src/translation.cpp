@@ -19,6 +19,7 @@
 
 // Headers
 #include <fstream>
+#include <iterator>
 #include <iomanip>
 #include <memory>
 #include <lcf/data.h>
@@ -136,6 +137,67 @@ void Translation::InitTranslations()
 	}
 }
 
+void Translation::SetHotReloadEnabled(bool enabled)
+{
+	hot_reload_enabled = enabled;
+	hot_reload_in_progress = false;
+	hot_reload_last_check_frame = -1;
+	hot_reload_marker.clear();
+	hot_reload_signature.clear();
+	if (!enabled) {
+		return;
+	}
+
+	auto root = GetRootTree();
+	if (!root || root.GetFullPath().empty()) {
+		Output::Warning("MTool hot reload requires a filesystem-backed language path");
+		hot_reload_enabled = false;
+		return;
+	}
+	hot_reload_marker = std::filesystem::path(root.GetFullPath()) / ".mtool-refresh";
+	hot_reload_signature = ReadHotReloadMarker();
+	Output::Debug("MTool hot reload enabled; watching {}", hot_reload_marker.string());
+}
+
+std::string Translation::ReadHotReloadMarker() const
+{
+	if (hot_reload_marker.empty()) {
+		return {};
+	}
+	std::ifstream marker(hot_reload_marker, std::ios::binary);
+	if (!marker) {
+		return {};
+	}
+	return std::string(std::istreambuf_iterator<char>(marker), std::istreambuf_iterator<char>());
+}
+
+void Translation::UpdateHotReload()
+{
+	if (!hot_reload_enabled) {
+		return;
+	}
+
+	const int frame = Player::GetFrames();
+	if (hot_reload_last_check_frame >= 0 && frame - hot_reload_last_check_frame < 30) {
+		return;
+	}
+	hot_reload_last_check_frame = frame;
+
+	const std::string signature = ReadHotReloadMarker();
+	if (signature.empty() || signature == hot_reload_signature || hot_reload_in_progress) {
+		return;
+	}
+	hot_reload_signature = signature;
+	if (current_language.lang_dir.empty()) {
+		return;
+	}
+
+	hot_reload_in_progress = true;
+	Output::Debug("MTool translation update detected; reloading active language '{}'", current_language.lang_dir);
+	const std::string lang_id = current_language.lang_dir;
+	FinishLanguageLoad(lang_id);
+}
+
 const Language& Translation::GetCurrentLanguage() const
 {
 	return current_language;
@@ -204,6 +266,11 @@ void Translation::SelectLanguageAsync(FileRequestResult*, std::string_view lang_
 		// Waiting for remaining callbacks
 		return;
 	}
+	FinishLanguageLoad(lang_id);
+}
+
+void Translation::FinishLanguageLoad(std::string_view lang_id) {
+	hot_reload_in_progress = false;
 
 	if (!ParseLanguageFiles(lang_id)) {
 		return;
@@ -338,6 +405,13 @@ bool Translation::ParseLanguageFiles(std::string_view lang_id)
 	});
 	assert(it != languages.end());
 	current_language = *it;
+	// MTool updates Meta.ini together with the PO catalogs during hot reload.
+	// Refresh the title metadata from disk instead of keeping the startup copy.
+	auto meta_file = language_tree.OpenFile(TRFILE_META_INI);
+	if (meta_file) {
+		lcf::INIReader ini(meta_file);
+		current_language.game_title = ini.GetString("Language", "GameTitle", "");
+	}
 
 	// Log
 	Output::Debug("Translation loaded {} sys, {} common, {} battle, and {} map .po files", (sys==nullptr?0:1), (battle==nullptr?0:1), (common==nullptr?0:1), maps.size());

@@ -143,6 +143,10 @@ void Game_Message::SetPendingMessage(PendingMessage&& pm) {
 	}
 }
 
+bool Game_Message::RefreshActiveTranslation(const std::vector<std::string>& lines) {
+	return window && window->RefreshActiveTranslation(lines);
+}
+
 bool Game_Message::IsMessagePending() {
 	return window ? window->IsMessagePending() : false;
 }

@@ -58,6 +58,8 @@ namespace Game_Message {
 	 * @param pm - the pending message text
 	 */
 	void SetPendingMessage(PendingMessage&& pm);
+	/** Rebuild the active message page with refreshed event translations. */
+	bool RefreshActiveTranslation(const std::vector<std::string>& lines);
 
 	/** Callback type for WordWrap function */
 	using WordWrapCallback = const std::function<void(std::string_view line)>;

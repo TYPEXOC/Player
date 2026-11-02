@@ -207,11 +207,49 @@ void Window_Message::StartMessageProcessing(PendingMessage pm) {
 	InsertNewPage();
 }
 
+bool Window_Message::RefreshActiveTranslation(const std::vector<std::string>& lines) {
+	if (!IsMessagePending() || lines.empty()) {
+		return false;
+	}
+
+	PendingMessage refreshed = pending_message;
+	size_t line_offset = 0;
+	if (refreshed.HasChoices()
+			&& refreshed.GetChoiceStartLine() == 0
+			&& lines.size() > static_cast<size_t>(refreshed.NumLines())) {
+		// Some games place MessageOptions between the message and ShowChoice,
+		// so the active window contains only the choice labels. The event source
+		// still gives us the preceding message lines; align against the visible
+		// choice-only page by taking the matching suffix.
+		line_offset = lines.size() - static_cast<size_t>(refreshed.NumLines());
+	}
+	if (lines.size() - line_offset != static_cast<size_t>(refreshed.NumLines())) {
+		Output::Debug("MTool active message refresh skipped: catalog lines={}, pending lines={}, choice start={}, choices={}", lines.size(), refreshed.NumLines(), refreshed.GetChoiceStartLine(), refreshed.GetNumChoices());
+		return false;
+	}
+
+	const int selected_choice = GetIndex();
+	const bool restore_choice = refreshed.HasChoices() && selected_choice >= 0;
+	for (size_t i = 0; i < lines.size(); ++i) {
+		if (i >= line_offset) {
+			refreshed.SetLineText(i - line_offset, lines[i]);
+		}
+	}
+	StartMessageProcessing(std::move(refreshed));
+	instant_speed = true;
+	refresh_choice_index = restore_choice ? selected_choice : -1;
+	return true;
+}
+
 void Window_Message::OnFinishPage() {
 	DebugLog("{}: FINISH PAGE");
 
 	if (pending_message.GetNumChoices() > 0) {
 		StartChoiceProcessing();
+		if (refresh_choice_index >= 0) {
+			SetIndex(refresh_choice_index);
+			refresh_choice_index = -1;
+		}
 	} else if (pending_message.HasNumberInput()) {
 		StartNumberInputProcessing();
 	} else if (!kill_page) {

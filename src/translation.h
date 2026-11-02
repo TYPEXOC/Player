@@ -23,6 +23,7 @@
 #include <sstream>
 #include <memory>
 #include <unordered_map>
+#include <filesystem>
 
 #include "async_handler.h"
 #include "filefinder.h"
@@ -166,6 +167,12 @@ public:
 	 */
 	void InitTranslations();
 
+	/** Enable MTool's marker-driven translation reload for this session. */
+	void SetHotReloadEnabled(bool enabled);
+
+	/** Check for an MTool refresh marker and reload the active language if needed. */
+	void UpdateHotReload();
+
 	/**
 	 * Do any translations besides the default exist?
 	 *
@@ -232,11 +239,13 @@ public:
 
 private:
 	void SelectLanguageAsync(FileRequestResult* result, std::string_view lang_id);
+	void FinishLanguageLoad(std::string_view lang_id);
 
 	/**
 	 * Reset all lookups loaded from .po files for the active language.
 	 */
 	void ClearTranslationLookups();
+	std::string ReadHotReloadMarker() const;
 
 	/**
 	 * Parse a .po file and save its language-related strings.
@@ -303,6 +312,12 @@ private:
 	std::unique_ptr<Dictionary> battle;    // RPG_RT.ldb.battle.po
 	std::unique_ptr<Dictionary> mapnames;  // RPG_RT.lmt.po (map names, used only in the "Teleport" event command)
 	std::unordered_map<std::string, std::unique_ptr<Dictionary>> maps;  // map<id>.po, indexed by map name
+
+	bool hot_reload_enabled = false;
+	bool hot_reload_in_progress = false;
+	int hot_reload_last_check_frame = -1;
+	std::filesystem::path hot_reload_marker;
+	std::string hot_reload_signature;
 
 	// Our list of available Languages (translations, localizations), determined by scanning the files on disk.
 	std::vector<Language> languages;

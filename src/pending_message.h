@@ -38,6 +38,11 @@ class PendingMessage {
 		void PushPageEnd();
 
 		void SetWordWrapped(bool value);
+		void SetLineText(size_t index, std::string text) {
+			if (index < texts.size()) {
+				texts[index] = std::move(text);
+			}
+		}
 		void SetChoiceCancelType(int value);
 		void SetChoiceResetColors(bool value);
 		void SetShowGoldWindow(bool value) { show_gold_window = value; }

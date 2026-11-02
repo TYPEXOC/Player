@@ -178,9 +178,9 @@ void Scene_Title::Refresh() {
 }
 
 void Scene_Title::OnTranslationChanged() {
+	const int selected_index = command_window ? command_window->GetIndex() : indices.new_game;
 	Start();
-
-	command_window->SetIndex(indices.translate);
+	command_window->SetIndex(selected_index);
 
 	Scene::OnTranslationChanged();
 }

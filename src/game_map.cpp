@@ -77,6 +77,7 @@ namespace {
 	std::unique_ptr<Game_Map::Caching::MapCache> map_cache;
 
 	std::unique_ptr<lcf::rpg::Map> map;
+	std::unique_ptr<lcf::rpg::Map> untranslated_map;
 
 	std::unique_ptr<Game_Interpreter_Map> interpreter;
 	std::vector<Game_Vehicle> vehicles;
@@ -134,6 +135,7 @@ void Game_Map::InitCommonEvents() {
 void Game_Map::Dispose() {
 	events.clear();
 	map.reset();
+	untranslated_map.reset();
 	map_info = {};
 	panorama = {};
 }
@@ -155,6 +157,9 @@ void Game_Map::Setup(std::unique_ptr<lcf::rpg::Map> map_in) {
 	Dispose();
 
 	map = std::move(map_in);
+	if (map) {
+		untranslated_map = std::make_unique<lcf::rpg::Map>(*map);
+	}
 
 	SetupCommon();
 
@@ -224,6 +229,9 @@ void Game_Map::SetupFromSave(
 		std::vector<lcf::rpg::SaveCommonEvent> save_ce) {
 
 	map = std::move(map_in);
+	if (map) {
+		untranslated_map = std::make_unique<lcf::rpg::Map>(*map);
+	}
 	map_info = std::move(save_map);
 	panorama = std::move(save_pan);
 
@@ -1896,6 +1904,30 @@ bool Game_Map::ReloadChipset() {
 
 void Game_Map::OnTranslationChanged() {
 	ReloadChipset();
+	if (map && untranslated_map) {
+		// Rebuild translated map commands in place so active and future events
+		// can use the refreshed catalog without resetting event state, switches,
+		// or the player's position.
+		for (auto& event : map->events) {
+			auto source_event = std::find_if(untranslated_map->events.begin(), untranslated_map->events.end(),
+				[&event](const lcf::rpg::Event& source) { return source.ID == event.ID; });
+			if (source_event == untranslated_map->events.end()) {
+				continue;
+			}
+			for (auto& page : event.pages) {
+				auto source_page = std::find_if(source_event->pages.begin(), source_event->pages.end(),
+					[&page](const lcf::rpg::EventPage& source) { return source.ID == page.ID; });
+				if (source_page != source_event->pages.end()) {
+					page.event_commands = source_page->event_commands;
+				}
+			}
+		}
+		TranslateMapMessages(GetMapId(), *map);
+		Game_Interpreter_Inspector::RefreshMapEventCommands(*interpreter, *map);
+		for (auto& event : events) {
+			Game_Interpreter_Inspector::RefreshMapEventCommands(event, *map);
+		}
+	}
 	// Marks common events for reload on map change
 	// This is not save to do while they are executing
 	translation_changed = true;

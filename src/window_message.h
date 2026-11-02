@@ -48,6 +48,8 @@ public:
 	 * non-displayed from Game_Message.
 	 */
 	void StartMessageProcessing(PendingMessage pm);
+	/** Refresh an active message after the language catalog changes. */
+	bool RefreshActiveTranslation(const std::vector<std::string>& lines);
 
 	/**
 	 * Ends the message processing.
@@ -161,6 +163,8 @@ protected:
 	bool kill_page = false;
 	/** If instant speed is enabled */
 	bool instant_speed = false;
+	/** Choice cursor to restore after an active translation redraw finishes. */
+	int refresh_choice_index = -1;
 
 	// FIXME: This hacky flags exist because RPG_RT likely animates the message window
 	// after the game loop finishes. Our code isn't structured that way, so we must hack

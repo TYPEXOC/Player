@@ -403,6 +403,8 @@ public:
 
 	lcf::rpg::SaveEventExecState& GetExecStateUnsafe(Game_Event& ev);
 	lcf::rpg::SaveEventExecState& GetExecStateUnsafe(Game_CommonEvent& ce);
+	static void RefreshMapEventCommands(Game_Interpreter& interpreter, const lcf::rpg::Map& map);
+	static void RefreshMapEventCommands(Game_Event& event, const lcf::rpg::Map& map);
 };
 
 template<InterpreterExecutionType type_ex, InterpreterEventType type_ev>
