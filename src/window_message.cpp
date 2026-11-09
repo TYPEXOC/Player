@@ -237,7 +237,7 @@ bool Window_Message::RefreshActiveTranslation(const std::vector<std::string>& li
 		return false;
 	}
 	const std::size_t current_page = text_index
-		? static_cast<std::size_t>(std::count(text.data(), text_index, '\f'))
+		? static_cast<std::size_t>(std::count(text.c_str(), text_index, '\f'))
 		: 0;
 	size_t line_offset = 0;
 	if (refreshed.HasChoices()
