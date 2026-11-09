@@ -16,6 +16,7 @@
  */
 
 // Headers
+#include <algorithm>
 #include <cctype>
 #include <sstream>
 #include <iterator>
@@ -142,9 +143,10 @@ namespace {
 	}
 }
 
-void Window_Message::StartMessageProcessing(PendingMessage pm) {
+void Window_Message::StartMessageProcessing(PendingMessage pm, std::size_t page_index) {
 	text.clear();
 	pending_message = std::move(pm);
+	refreshing_translation_page = false;
 
 	if (!IsVisible()) {
 		DebugLogResetFrameCounter();
@@ -194,9 +196,25 @@ void Window_Message::StartMessageProcessing(PendingMessage pm) {
 		text.push_back('\f');
 	}
 
+	// Restore the requested page before InsertNewPage initializes the window.
+	// The final form-feed terminates the last page, so do not advance past it.
+	std::size_t restored_page = 0;
+	std::size_t page_start = 0;
+	while (restored_page < page_index) {
+		const std::size_t page_break = text.find('\f', page_start);
+		if (page_break == std::string::npos || page_break + 1 >= text.size()) {
+			break;
+		}
+		page_start = page_break + 1;
+		++restored_page;
+	}
+
 	item_max = min(4, pending_message.GetNumChoices());
 
-	text_index = text.data();
+	text_index = text.data() + page_start;
+	if (restored_page != page_index) {
+		Output::Debug("MTool active message refresh clamped page: requested={}, restored={}", page_index, restored_page);
+	}
 
 	DebugLog("{}: MSG TEXT \n{}", text);
 
@@ -213,6 +231,14 @@ bool Window_Message::RefreshActiveTranslation(const std::vector<std::string>& li
 	}
 
 	PendingMessage refreshed = pending_message;
+	if (refreshed.HasNumberInput()) {
+		// Rebuilding this window would reset a number the player may already be entering.
+		Output::Debug("MTool active message refresh skipped: number input is active");
+		return false;
+	}
+	const std::size_t current_page = text_index
+		? static_cast<std::size_t>(std::count(text.data(), text_index, '\f'))
+		: 0;
 	size_t line_offset = 0;
 	if (refreshed.HasChoices()
 			&& refreshed.GetChoiceStartLine() == 0
@@ -235,9 +261,11 @@ bool Window_Message::RefreshActiveTranslation(const std::vector<std::string>& li
 			refreshed.SetLineText(i - line_offset, lines[i]);
 		}
 	}
-	StartMessageProcessing(std::move(refreshed));
-	instant_speed = true;
 	refresh_choice_index = restore_choice ? selected_choice : -1;
+	StartMessageProcessing(std::move(refreshed), current_page);
+	refreshing_translation_page = true;
+	instant_speed = true;
+	wait_count = 0;
 	return true;
 }
 
@@ -264,6 +292,7 @@ void Window_Message::OnFinishPage() {
 	line_count = 0;
 	kill_page = false;
 	line_char_counter = 0;
+	refreshing_translation_page = false;
 }
 
 void Window_Message::StartChoiceProcessing() {
@@ -529,6 +558,10 @@ void Window_Message::Update() {
 void Window_Message::UpdateMessage() {
 	// Message Box Show Message rendering loop
 	bool instant_speed_forced = false;
+	if (refreshing_translation_page) {
+		instant_speed = true;
+		instant_speed_forced = true;
+	}
 
 	if ((Player::debug_flag || Main_Data::game_system->IsFastForwardText()) &&
 		(Input::IsPressed(Input::SHIFT) || Input::IsPressed(Input::DEBUG_MESSAGE_FAST_FORWARD))) {

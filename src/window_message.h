@@ -19,6 +19,7 @@
 #define EP_WINDOW_MESSAGE_H
 
 // Headers
+#include <cstddef>
 #include <string>
 #include "window_gold.h"
 #include "window_numberinput.h"
@@ -47,7 +48,7 @@ public:
 	 * Starts message processing by reading all
 	 * non-displayed from Game_Message.
 	 */
-	void StartMessageProcessing(PendingMessage pm);
+	void StartMessageProcessing(PendingMessage pm, std::size_t page_index = 0);
 	/** Refresh an active message after the language catalog changes. */
 	bool RefreshActiveTranslation(const std::vector<std::string>& lines);
 
@@ -165,6 +166,8 @@ protected:
 	bool instant_speed = false;
 	/** Choice cursor to restore after an active translation redraw finishes. */
 	int refresh_choice_index = -1;
+	/** Keep all lines of the refreshed page at instant speed until that page ends. */
+	bool refreshing_translation_page = false;
 
 	// FIXME: This hacky flags exist because RPG_RT likely animates the message window
 	// after the game loop finishes. Our code isn't structured that way, so we must hack

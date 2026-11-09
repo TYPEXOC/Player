@@ -1,0 +1,61 @@
+name: MTool Windows build
+
+on:
+  push:
+    branches: [Dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    name: Windows x64 SDL3 release
+    runs-on: windows-2022
+    steps:
+      - name: Check out Player
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Get EasyRPG build dependencies
+        shell: pwsh
+        run: |
+          $buildscripts = Join-Path $env:RUNNER_TEMP 'easyrpg-buildscripts'
+          git clone --depth 1 https://github.com/EasyRPG/buildscripts.git $buildscripts
+          if ($LASTEXITCODE -ne 0) { throw 'Could not clone EasyRPG buildscripts.' }
+
+          $vcpkg = Join-Path $buildscripts 'windows\vcpkg'
+          New-Item -ItemType Directory -Path $vcpkg -Force | Out-Null
+          $archive = Join-Path $env:RUNNER_TEMP 'toolchain-windows.zip'
+          Invoke-WebRequest -Uri 'https://ci.easyrpg.org/downloads/windows/toolchain-windows.zip' -OutFile $archive
+          tar -xf $archive -C $vcpkg --strip-components=1
+          if ($LASTEXITCODE -ne 0) { throw 'Could not unpack the EasyRPG Windows toolchain.' }
+
+          "EASYRPG_BUILDSCRIPTS=$buildscripts" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Configure Player
+        run: >-
+          cmake --preset windows-x64-vs2022-sdl3-release
+          -DPLAYER_BUILD_LIBLCF=ON
+          -DPLAYER_ENABLE_TESTS=OFF
+
+      - name: Build Player
+        run: cmake --build build/windows-x64-vs2022-sdl3-release --config Release --target EasyRPG_Player_exe --parallel
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          $builtPlayer = Join-Path $env:GITHUB_WORKSPACE 'build\windows-x64-vs2022-sdl3-release\Release\Player.exe'
+          if (-not (Test-Path -LiteralPath $builtPlayer)) { throw "Player executable not found: $builtPlayer" }
+          $artifactDirectory = Join-Path $env:GITHUB_WORKSPACE 'mtool-windows-artifact'
+          New-Item -ItemType Directory -Path $artifactDirectory -Force | Out-Null
+          Copy-Item -LiteralPath $builtPlayer -Destination (Join-Path $artifactDirectory 'MTool-Player.exe')
+
+      - name: Upload Player executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: mtool-easyrpg-player-windows-x64
+          path: mtool-windows-artifact/MTool-Player.exe
+          if-no-files-found: error
+          retention-days: 14
