@@ -49,6 +49,14 @@ android {
         }
     }
 
+    // AGP 9 forbids android:extractNativeLibs in the manifest; the legacy
+    // on-disk layout is requested here instead.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     signingConfigs {
         anyplay {
             def ks = System.getenv('ANYPLAY_KEYSTORE_FILE')

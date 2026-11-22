@@ -30,7 +30,6 @@
         android:isGame="true"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
-        android:extractNativeLibs="true"
         android:allowBackup="true"
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="true">
