@@ -38,12 +38,18 @@ private:
 	std::string ListSystem();
 	void WriteState();
 	void ApplyContinuous();
+	std::string ListItems();
+	std::string ListActors();
+	std::string ListMaps();
+	std::string ListSaves();
+	void ApplyItemLocks();
 
 	std::string dir_;
 	int frame_counter_ = 0;
 	bool unlimited_gold_ = false;
 	std::map<int, bool> switch_locks_;
 	std::map<int, int> variable_locks_;
+	std::map<int, int> item_locks_;
 };
 
 #endif
