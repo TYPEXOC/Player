@@ -60,7 +60,22 @@ jobs:
           # The module packages arm64-v8a and armeabi-v7a; skip the two x86
           # ABIs (emulator-only targets) to save toolchain time.
           sed -i 's/^build "x86"/#&/; s/^build "x86_64"/#&/' 2_build_toolchain.sh
-          bash -x ./2_build_toolchain.sh
+          bash -x ./2_build_toolchain.sh 2> toolchain-trace.log
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            # Surface the failing command as annotations and the trace tail
+            # in the step summary (both publicly visible).
+            tail -60 toolchain-trace.log | while IFS= read -r l; do
+              echo "::error::${l:0:400}"
+            done
+            {
+              echo "### Toolchain trace (last 120 lines)"
+              echo '```'
+              tail -120 toolchain-trace.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit $rc
+          fi
 
       - name: Build module APK
         run: |
