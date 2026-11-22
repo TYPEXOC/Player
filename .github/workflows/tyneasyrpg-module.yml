@@ -18,7 +18,7 @@ defaults:
 
 jobs:
   apk:
-    name: Android APK (arm64-v8a debug)
+    name: Android APK (arm64-v8a + armeabi-v7a debug)
     runs-on: ubuntu-latest
     timeout-minutes: 300
 
@@ -54,12 +54,12 @@ jobs:
           bash ./1_download_library.sh
           chmod -R u+x "$PWD/android-sdk/cmdline-tools" || true
 
-      - name: Build arm64-v8a dependency toolchain
+      - name: Build arm64-v8a + armeabi-v7a dependency toolchains
         working-directory: ${{ env.TOOLCHAIN_ROOT }}
         run: |
-          # The module packages arm64-v8a only; keep the toolchain build to a
-          # quarter of the time by skipping the other three ABIs.
-          sed -i 's/^build "ARMeabi-v7a"/#&/; s/^build "x86"/#&/; s/^build "x86_64"/#&/' 2_build_toolchain.sh
+          # The module packages arm64-v8a and armeabi-v7a; skip the two x86
+          # ABIs (emulator-only targets) to save toolchain time.
+          sed -i 's/^build "x86"/#&/; s/^build "x86_64"/#&/' 2_build_toolchain.sh
           bash -x ./2_build_toolchain.sh
 
       - name: Build module APK
