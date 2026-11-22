@@ -80,12 +80,12 @@ public class MainActivity extends Activity {
         TynRuntimeDiagnostics.append(TynSession.current(),
             "Hand-off received: protocol=" + protocol + " folder=" + folder);
 
-        // Cold load the translation catalog before the native game thread starts.
+        // Translation loads in memory: the session converts the map and the
+        // engine activity pushes it via JNI once its libraries are up.
         EasyRpgTranslationSession session = EasyRpgTranslationSession.get(this);
-        int translationCount = session.startForLaunch(getContentResolver(), mapUri);
+        session.beginSession(getContentResolver(), mapUri);
 
         EasyRpgPlayerActivity.tynHidePad = !ModulePrefs.isPadEnabled(this);
-        session.markEngineStarted();
 
         List<String> args = new ArrayList<>();
         args.add(gameDir.getAbsolutePath());
@@ -93,12 +93,6 @@ public class MainActivity extends Activity {
             // Same directory the shared cheat controller (Kotlin side) uses.
             args.add("--tyneasyrpg-cheat-dir");
             args.add(getCacheDir().getAbsolutePath());
-        }
-        if (translationCount > 0) {
-            args.add("--language-path");
-            args.add(session.getLanguageRootPath());
-            args.add("--language");
-            args.add(session.getLanguageId());
         }
         String encoding = ModulePrefs.getEncoding(this);
         if (!encoding.trim().isEmpty()) {
@@ -128,7 +122,7 @@ public class MainActivity extends Activity {
             saveDirectory.isEmpty() ? gameDir.getAbsolutePath() : saveDirectory);
         startActivity(engine);
         TynRuntimeDiagnostics.append(TynSession.current(),
-            "Engine activity started with " + args.size() + " argument(s), translation records=" + translationCount);
+            "Engine activity started with " + args.size() + " argument(s), translation loading in background");
         finish();
     }
 

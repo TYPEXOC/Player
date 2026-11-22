@@ -69,6 +69,20 @@ Java_org_easyrpg_player_player_EasyRpgPlayerActivity_requestTranslationReload(JN
 	Player::translation.RequestExternalReload();
 }
 
+// Copies the host-pushed in-memory catalog and queues it; the game loop
+// parses and applies it (safe from any thread).
+JNIEXPORT void JNICALL
+Java_org_easyrpg_player_player_EasyRpgPlayerActivity_setTranslationCatalog(JNIEnv* env, jclass, jbyteArray data) {
+	jsize size = env->GetArrayLength(data);
+	if (size <= 0) {
+		return;
+	}
+	std::string text;
+	text.resize(static_cast<size_t>(size));
+	env->GetByteArrayRegion(data, 0, size, reinterpret_cast<jbyte*>(text.data()));
+	TyneasyrpgCheatBroker::Instance().PushTranslationCatalog(std::move(text));
+}
+
 #ifdef __cplusplus
 }
 #endif

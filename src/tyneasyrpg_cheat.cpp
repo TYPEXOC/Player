@@ -20,6 +20,7 @@
 #include "output.h"
 #include "scene.h"
 #include "scene_load.h"
+#include "translation.h"
 #include "scene_save.h"
 #include "teleport_target.h"
 
@@ -100,14 +101,48 @@ void TyneasyrpgCheatBroker::ApplyItemLocks() {
 	}
 }
 
-void TyneasyrpgCheatBroker::Poll() {
-	if (dir_.empty()) {
+void TyneasyrpgCheatBroker::ProcessTranslation() {
+	std::string pending;
+	{
+		std::lock_guard<std::mutex> lock(translation_mutex_);
+		if (!translation_pending_flag_) {
+			return;
+		}
+		pending = std::move(translation_pending_);
+		translation_pending_.clear();
+		translation_pending_flag_ = false;
+	}
+	// Wait until a scene exists: applying the catalog reloads the database.
+	if (!Scene::instance) {
+		std::lock_guard<std::mutex> lock(translation_mutex_);
+		translation_pending_ = std::move(pending);
+		translation_pending_flag_ = true;
 		return;
 	}
+	Player::translation.ApplyExternalCatalog(std::move(pending));
+}
+
+void TyneasyrpgCheatBroker::PushTranslationCatalog(std::string po_text) {
+	size_t size = po_text.size();
+	{
+		std::lock_guard<std::mutex> lock(translation_mutex_);
+		translation_pending_ = std::move(po_text);
+		translation_pending_flag_ = true;
+	}
+	Output::Debug("TYN: translation catalog queued ({} bytes)", size);
+}
+
+void TyneasyrpgCheatBroker::Poll() {
 	if (++frame_counter_ < POLL_FRAMES) {
 		return;
 	}
 	frame_counter_ = 0;
+
+	ProcessTranslation();
+
+	if (dir_.empty()) {
+		return;
+	}
 
 	ApplyContinuous();
 	ApplyItemLocks();

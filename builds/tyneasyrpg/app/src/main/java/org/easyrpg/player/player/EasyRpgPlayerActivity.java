@@ -127,6 +127,13 @@ public class EasyRpgPlayerActivity extends SDLActivity implements NavigationView
 
         SettingsManager.init(getApplicationContext());
 
+        // Push the in-memory translation catalog once the libraries are up.
+        try {
+            com.tyranor.runtime.easyrpg.EasyRpgTranslationSession.get(getApplicationContext()).onEngineReady();
+        } catch (Exception error) {
+            android.util.Log.w("TYN-EasyRPG", "Translation push hook failed", error);
+        }
+
         // Load our custom activity layout
         setContentView(R.layout.activity_player);
 
@@ -468,7 +475,8 @@ public class EasyRpgPlayerActivity extends SDLActivity implements NavigationView
     public static native void toggleFps();
 
     /** Pushed by the TYN translation session after the catalog is rewritten. */
-    public static native void requestTranslationReload();
+    /** Raw in-memory PO catalog pushed by the TYN translation session. */
+    public static native void setTranslationCatalog(byte[] data);
 
     protected String[] getArguments() {
         return getIntent().getStringArrayExtra(TAG_COMMAND_LINE);

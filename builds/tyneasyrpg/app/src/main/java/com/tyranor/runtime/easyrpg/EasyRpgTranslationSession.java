@@ -17,17 +17,12 @@ import org.easyrpg.player.player.EasyRpgPlayerActivity;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,27 +31,24 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Consumes the TYN translation map URI (mtool-json: a flat UTF-8 JSON object
- * of original -> translated strings) and materializes it as an EasyRPG
- * language catalog in module-private storage.
+ * of original -> translated strings) and converts it to an in-memory gettext
+ * catalog that is pushed straight into the engine (JNI). Nothing is written
+ * to the game folder or to disk: the catalog lives only for the process
+ * lifetime and is dropped when the game closes.
  *
- * The engine never reads the game directory for translations: MainActivity
- * passes --language-path/--language pointing at the private cache, so the
- * game folder stays untouched. URI updates are re-materialized and pushed to
- * the running engine through the requestTranslationReload JNI entry.
+ * The engine applies the catalog on the game thread (re-parses, reloads the
+ * database and redraws), so updating the map at runtime is a hot reload.
  */
-final class EasyRpgTranslationSession {
+public final class EasyRpgTranslationSession {
     private static final String TAG = "TYN-EasyRPG[Translation]";
     private static final String REVISION_COLUMN = "revision";
     private static final long REVISION_HEARTBEAT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long NOTIFICATION_COALESCE_MS = 150;
     private static final long RETRY_MIN_MS = 1_000;
     private static final long RETRY_MAX_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long NATIVE_RETRY_MS = 500;
+    private static final long NATIVE_RETRY_MAX_MS = 30_000;
     private static final int MAX_TRANSLATION_BYTES = 64 * 1024 * 1024;
-
-    /** Language id exposed through --language; one fixed catalog per session. */
-    private static final String LANGUAGE_ID = "tyn";
-    private static final String PO_FILE_NAME = "rpg_rt.ldb.po";
-    private static final String PO_TMP_NAME = "rpg_rt.ldb.po.tmp";
 
     private static volatile EasyRpgTranslationSession instance;
 
@@ -73,13 +65,15 @@ final class EasyRpgTranslationSession {
     private boolean observerRegistered;
     private ScheduledFuture<?> heartbeatFuture;
     private ScheduledFuture<?> retryFuture;
+    private ScheduledFuture<?> nativeRetryFuture;
     private volatile boolean closed;
-    private volatile boolean engineStarted;
-    private volatile boolean hasSuccessfulLoad;
     private volatile long lastRevision;
     private volatile boolean hasRevision;
     private volatile long nextRetryMs = RETRY_MIN_MS;
     private volatile int lastRecordCount;
+
+    /** Latest built catalog; replaced atomically, referenced only by this class. */
+    private volatile byte[] pendingCatalog;
 
     private final ContentObserver observer = new ContentObserver(mainHandler) {
         @Override
@@ -97,50 +91,42 @@ final class EasyRpgTranslationSession {
         this.appContext = context.getApplicationContext();
     }
 
-    static synchronized EasyRpgTranslationSession get(Context context) {
+    public static synchronized EasyRpgTranslationSession get(Context context) {
         if (instance == null) {
             instance = new EasyRpgTranslationSession(context);
         }
         return instance;
     }
 
-    /** Absolute path handed to the engine as --language-path. */
-    String getLanguageRootPath() {
-        return languageRoot().getAbsolutePath();
-    }
-
-    String getLanguageId() {
-        return LANGUAGE_ID;
-    }
-
     /**
-     * Blocking cold load before the native game thread starts. Returns the
-     * number of records in the active map; 0 means "show original text".
-     * Never throws for map-level failures: the game must start regardless.
+     * Starts the session: builds the catalog in memory (background) and
+     * watches the URI for updates. Never blocks the caller and never fails
+     * the launch; without a usable map the engine runs the original text.
      */
-    synchronized int startForLaunch(@Nullable ContentResolver resolver, @Nullable Uri uri) {
+    public synchronized void beginSession(@Nullable ContentResolver resolver, @Nullable Uri uri) {
         this.resolver = resolver;
         this.uri = uri;
-        int count = 0;
         if (resolver != null && uri != null) {
-            try {
-                count = refreshMap("cold load");
-            } catch (Exception error) {
-                Log.w(TAG, "Cold translation load failed; launching with original text", error);
-                appendDiagnostic("Cold translation load failed: " + error);
-                scheduleRetry();
-            }
+            worker.execute(() -> {
+                try {
+                    buildAndPush("cold load");
+                } catch (Exception error) {
+                    Log.w(TAG, "Cold translation load failed; running with original text", error);
+                    appendDiagnostic("Cold translation load failed: " + error);
+                    scheduleRetry();
+                }
+            });
         } else {
-            appendDiagnostic("No translation URI; launching with original text");
+            appendDiagnostic("No translation URI; running with original text");
         }
         registerObserver();
         startHeartbeat();
-        return count;
     }
 
-    /** Marks that the engine activity is running; later updates push reloads to native. */
-    void markEngineStarted() {
-        engineStarted = true;
+    /** Called by the engine activity once the native libraries are loaded. */
+    public void onEngineReady() {
+        appendDiagnostic("Engine native libraries ready");
+        pushPending();
     }
 
     synchronized void close() {
@@ -156,6 +142,7 @@ final class EasyRpgTranslationSession {
         }
         if (heartbeatFuture != null) heartbeatFuture.cancel(false);
         if (retryFuture != null) retryFuture.cancel(false);
+        if (nativeRetryFuture != null) nativeRetryFuture.cancel(false);
         worker.shutdown();
     }
 
@@ -216,7 +203,7 @@ final class EasyRpgTranslationSession {
         try {
             worker.execute(() -> {
                 try {
-                    refreshMap("URI notification");
+                    buildAndPush("URI notification");
                 } catch (Exception error) {
                     Log.w(TAG, "Translation refresh failed", error);
                     appendDiagnostic("Translation refresh failed: " + error);
@@ -236,7 +223,7 @@ final class EasyRpgTranslationSession {
             if (retryFuture != null) retryFuture.cancel(false);
             retryFuture = worker.schedule(() -> {
                 try {
-                    refreshMap("retry");
+                    buildAndPush("retry");
                 } catch (Exception error) {
                     Log.w(TAG, "Translation retry failed", error);
                     scheduleRetry();
@@ -255,23 +242,45 @@ final class EasyRpgTranslationSession {
         }
     }
 
-    /** Reads the full map and rewrites the private catalog atomically. */
-    private synchronized int refreshMap(String reason) throws IOException {
-        if (resolver == null || uri == null) return 0;
-        Map<String, String> map = readMap();
-        writeCatalog(map);
-        hasSuccessfulLoad = true;
-        lastRecordCount = map.size();
-        appendDiagnostic("Loaded translation map (" + reason + "): " + map.size() + " record(s)");
-        if (engineStarted) {
-            // The native game loop performs the actual reload.
-            EasyRpgPlayerActivity.requestTranslationReload();
-        }
-        return lastRecordCount;
+    /** Reads the full map, converts it to an in-memory catalog and pushes it. */
+    private synchronized void buildAndPush(String reason) throws IOException {
+        if (resolver == null || uri == null) return;
+        ByteArrayOutputStream po = readMapAsCatalog();
+        pendingCatalog = po.toByteArray();
+        appendDiagnostic("Converted translation map (" + reason + "): "
+            + lastRecordCount + " record(s), catalog " + pendingCatalog.length + " bytes");
+        pushPending();
     }
 
-    private Map<String, String> readMap() throws IOException {
-        Map<String, String> map = new LinkedHashMap<>();
+    private void pushPending() {
+        byte[] catalog = pendingCatalog;
+        if (catalog == null || closed) return;
+        try {
+            EasyRpgPlayerActivity.setTranslationCatalog(catalog);
+            appendDiagnostic("Translation catalog pushed to the engine");
+        } catch (UnsatisfiedLinkError linkError) {
+            // Native libraries not loaded yet (cold load raced the engine
+            // start): retry until they are.
+            scheduleNativeRetry();
+        }
+    }
+
+    private void scheduleNativeRetry() {
+        if (closed) return;
+        try {
+            if (nativeRetryFuture != null) nativeRetryFuture.cancel(false);
+            nativeRetryFuture = worker.schedule(this::pushPending,
+                NATIVE_RETRY_MS, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException ignored) {
+            // Session closed.
+        }
+    }
+
+    /** Streams the JSON map into PO text; the Map is never materialized. */
+    private ByteArrayOutputStream readMapAsCatalog() throws IOException {
+        ByteArrayOutputStream po = new ByteArrayOutputStream(64 * 1024);
+        OutputStreamWriter writer = new OutputStreamWriter(po, StandardCharsets.UTF_8);
+        int records = 0;
         try (InputStream raw = resolver.openInputStream(uri);
              CountingInputStream input = new CountingInputStream(raw, MAX_TRANSLATION_BYTES);
              JsonReader reader = new JsonReader(new BufferedReader(
@@ -280,6 +289,8 @@ final class EasyRpgTranslationSession {
             if (reader.peek() != JsonToken.BEGIN_OBJECT) {
                 throw new IOException("Translation map root is not a JSON object");
             }
+            // Dictionary::FromPo discards the first msgstr line as the header.
+            writer.write("msgstr \"\"\n\n");
             reader.beginObject();
             while (reader.hasNext()) {
                 String key = reader.nextName();
@@ -289,7 +300,12 @@ final class EasyRpgTranslationSession {
                     // Empty originals and empty translations are treated as
                     // untranslated so the engine keeps the original text.
                     if (!key.isEmpty() && !value.isEmpty()) {
-                        map.put(key, value);
+                        writer.write("msgid \"");
+                        writePoString(writer, key);
+                        writer.write("\"\nmsgstr \"");
+                        writePoString(writer, value);
+                        writer.write("\"\n\n");
+                        ++records;
                     }
                 } else {
                     // Nested objects/arrays are not valid mtool-json entries.
@@ -297,51 +313,15 @@ final class EasyRpgTranslationSession {
                 }
             }
             reader.endObject();
-        }
-        return map;
-    }
-
-    /** Atomically rewrites rpg_rt.ldb.po; the engine always sees a whole file. */
-    private void writeCatalog(Map<String, String> map) throws IOException {
-        File root = new File(languageRoot(), LANGUAGE_ID);
-        if (!root.isDirectory() && !root.mkdirs()) {
-            throw new IOException("Could not create translation catalog directory");
-        }
-        writeMetaIni(root);
-        File target = new File(root, PO_FILE_NAME);
-        File tmp = new File(root, PO_TMP_NAME);
-        try (OutputStreamWriter writer = new OutputStreamWriter(
-            new FileOutputStream(tmp, false), StandardCharsets.UTF_8)) {
-            // Dictionary::FromPo discards the first msgstr line as the header.
-            writer.write("msgstr \"\"\n\n");
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                writer.write("msgid \"");
-                writePoString(writer, entry.getKey());
-                writer.write("\"\nmsgstr \"");
-                writePoString(writer, entry.getValue());
-                writer.write("\"\n\n");
-            }
             writer.flush();
+        } catch (IOException error) {
+            throw error;
         }
-        try {
-            Files.move(tmp.toPath(), target.toPath(),
-                StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException atomicFailure) {
-            Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
+        lastRecordCount = records;
+        return po;
     }
 
-    private void writeMetaIni(File root) throws IOException {
-        File meta = new File(root, "meta.ini");
-        if (meta.isFile()) return;
-        try (OutputStreamWriter writer = new OutputStreamWriter(
-            new FileOutputStream(meta, false), StandardCharsets.UTF_8)) {
-            writer.write("[Language]\n");
-            writer.write("Name=TYN Translation\n");
-        }
-    }
-
-    /** Escapes per Dictionary::FromPo: only \\, \n and \" are recognized. */
+    /** Escapes per Dictionary::FromPo: only \\, \\n and \\\" are recognized. */
     private static void writePoString(OutputStreamWriter writer, String value) throws IOException {
         for (int i = 0; i < value.length(); ++i) {
             char c = value.charAt(i);
@@ -359,10 +339,6 @@ final class EasyRpgTranslationSession {
                     writer.write(c);
             }
         }
-    }
-
-    private File languageRoot() {
-        return new File(appContext.getCacheDir(), "tyn-translation");
     }
 
     private void appendDiagnostic(String message) {

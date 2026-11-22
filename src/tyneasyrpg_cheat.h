@@ -18,6 +18,7 @@
 #define EP_TYNEASYRPG_CHEAT_H
 
 #include <map>
+#include <mutex>
 #include <string>
 
 class TyneasyrpgCheatBroker {
@@ -29,6 +30,9 @@ public:
 
 	/** Poll the command file and apply continuous cheats. Game thread only. */
 	void Poll();
+
+	/** Queue an in-memory translation catalog (host-pushed, any thread). */
+	void PushTranslationCatalog(std::string po_text);
 
 private:
 	TyneasyrpgCheatBroker() = default;
@@ -50,6 +54,11 @@ private:
 	std::map<int, bool> switch_locks_;
 	std::map<int, int> variable_locks_;
 	std::map<int, int> item_locks_;
+
+	// Host-pushed translation catalog, awaiting the game thread.
+	std::mutex translation_mutex_;
+	std::string translation_pending_;
+	bool translation_pending_flag_ = false;
 };
 
 #endif

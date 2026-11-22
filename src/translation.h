@@ -209,6 +209,15 @@ public:
 	void SelectLanguage(std::string_view lang_id);
 
 	/**
+		 * Parse an in-memory gettext catalog and apply it as the active
+		 * translation (host-pushed, no files involved). Safe to call again
+		 * with new content: re-parses and reloads the database.
+		 *
+		 * @param po_text Full .po catalog text.
+		 */
+	void ApplyExternalCatalog(std::string po_text);
+
+	/**
 	 * Request a reload of the active language (or the first known one).
 	 * Thread-safe; the reload runs on the game thread once it processes
 	 * the request in ProcessPendingReload.
@@ -325,11 +334,16 @@ private:
 	bool ParseLanguageFiles(std::string_view lang_id);
 
 	// Our translations are broken apart into multiple files; we store a lookup for each one.
-	std::unique_ptr<Dictionary> sys;       // RPG_RT.ldb.po
-	std::unique_ptr<Dictionary> common;    // RPG_RT.ldb.common.po
-	std::unique_ptr<Dictionary> battle;    // RPG_RT.ldb.battle.po
-	std::unique_ptr<Dictionary> mapnames;  // RPG_RT.lmt.po (map names, used only in the "Teleport" event command)
-	std::unordered_map<std::string, std::unique_ptr<Dictionary>> maps;  // map<id>.po, indexed by map name
+	// shared_ptr so the external (in-memory) catalog can be shared across all of them.
+	std::shared_ptr<Dictionary> sys;       // RPG_RT.ldb.po
+	std::shared_ptr<Dictionary> common;    // RPG_RT.ldb.common.po
+	std::shared_ptr<Dictionary> battle;    // RPG_RT.ldb.battle.po
+	std::shared_ptr<Dictionary> mapnames;  // RPG_RT.lmt.po (map names, used only in the "Teleport" event command)
+	std::unordered_map<std::string, std::shared_ptr<Dictionary>> maps;  // map<id>.po, indexed by map name
+
+	// Set while an external (in-memory, host-pushed) catalog is active: all
+	// map message rewrites reuse the shared catalog instead of map .po files.
+	bool external_active = false;
 
 	// Our list of available Languages (translations, localizations), determined by scanning the files on disk.
 	std::vector<Language> languages;

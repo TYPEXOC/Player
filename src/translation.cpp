@@ -37,6 +37,17 @@
 #include "utils.h"
 #include "scene.h"
 
+namespace {
+	/** std::streambuf over an in-memory text buffer (external catalogs). */
+	class PoTextStreambuf : public std::streambuf {
+	public:
+		explicit PoTextStreambuf(const std::string& text) {
+			char* begin = const_cast<char*>(text.data());
+			setg(begin, begin, begin + text.size());
+		}
+	};
+}
+
 // Name of the translate directory
 #define TRDIR_NAME "language"
 
@@ -260,6 +271,31 @@ void Translation::ProcessPendingReload() {
 
 	Output::Debug("External translation update detected; reloading language '{}'", lang_id);
 	SelectLanguage(lang_id);
+}
+
+void Translation::ApplyExternalCatalog(std::string po_text) {
+	auto dict = std::make_shared<Dictionary>();
+	PoTextStreambuf buf(po_text);
+	Filesystem_Stream::InputStream in(&buf, "external.po");
+	Dictionary::FromPo(*dict, in);
+
+	sys = dict;
+	common = dict;
+	battle = dict;
+	mapnames = dict;
+	maps.clear();
+	external_active = true;
+
+	Player::LoadDatabase();
+	RewriteDatabase();
+	RewriteTreemapNames();
+	RewriteBattleEventMessages();
+	RewriteCommonEventMessages();
+	Cache::Clear();
+	if (Scene::instance) {
+		Scene::instance->OnTranslationChanged();
+	}
+	Output::Debug("External translation catalog applied");
 }
 
 void Translation::RequestAndAddMap(int map_id) {
@@ -818,6 +854,17 @@ void Translation::RewriteEventCommandMessage(const Dictionary& dict, std::vector
 }
 
 void Translation::RewriteMapMessages(std::string_view map_name, lcf::rpg::Map& map) {
+	// External (host-pushed) catalogs carry all entries in the shared dict.
+	if (external_active) {
+		if (!sys) { return; }
+		for (lcf::rpg::Event& ev : map.events) {
+			for (lcf::rpg::EventPage& pg : ev.pages) {
+				RewriteEventCommandMessage(*sys, pg.event_commands);
+			}
+		}
+		return;
+	}
+
 	// Retrieve lookup for this map.
 	auto mapIt = maps.find(ToString(map_name));
 	if (mapIt==maps.end()) { return; }
