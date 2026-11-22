@@ -30,22 +30,14 @@ jobs:
         image:
           #   version of: # CMake  | g++    | SDL    |     support end  #
           # -------------------------------------------------------------
-          - ubuntu:22.04  # 3.22.1 | 11.2.0 | 2.0.20 | LTS       (5/27) #
-          - debian:12     # 3.25.1 | 12.2.0 | 2.26.5 | LTS       (6/28) #
           - debian:13     # 3.31.6 | 14.2.0 | 2.32.4 | stable    (8/28) #
-          - ubuntu:26.04  # 4.2.3  | 15.2.0 | 3.4.2  | stable    (5/31) #
         os:
           - arch: x86_64
             name: ubuntu-latest
-          - arch: arm64
-            name: ubuntu-26.04-arm
-        exclude:
-          - os:
-              arch: arm64
-            image: ubuntu:22.04 # too old, no arm images
-          - os:
-              arch: x86_64
-            image: ubuntu:26.04 # recent enough to be tested in the wild
+        # Trimmed to a single fast compile-check job on the tyn-module
+        # branch: the real target is Android arm64-v8a, validated by the
+        # runtime module's own CI. Restore the upstream matrix on mainline
+        # branches.
 
     steps:
       - name: Install dependencies
