@@ -63,6 +63,12 @@ Java_org_easyrpg_player_player_EasyRpgPlayerActivity_openSettings(JNIEnv *, jcla
 	});
 }
 
+// Only flips an atomic flag read by the game loop, safe from any thread.
+JNIEXPORT void JNICALL
+Java_org_easyrpg_player_player_EasyRpgPlayerActivity_requestTranslationReload(JNIEnv *, jclass) {
+	Player::translation.RequestExternalReload();
+}
+
 #ifdef __cplusplus
 }
 #endif
