@@ -69,7 +69,13 @@ jobs:
             -PtoolchainDirs="${{ env.TOOLCHAIN_ROOT }}" 2>&1 | tee gradle-build.log
           rc=${PIPESTATUS[0]}
           if [ $rc -ne 0 ]; then
-            # Surface the actual build errors as annotations (publicly visible).
+            # Dump the failure tail into the step summary (public, no sign-in).
+            {
+              echo "### Gradle failure (last 150 lines)"
+              echo '```'
+              tail -150 gradle-build.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
             grep -aE "error:|FAILURE:|CMake Error|e: |Exception" gradle-build.log | head -30 | while IFS= read -r l; do
               echo "::error::${l:0:400}"
             done
