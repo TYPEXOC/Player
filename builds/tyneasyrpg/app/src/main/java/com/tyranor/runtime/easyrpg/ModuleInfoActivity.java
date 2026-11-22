@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.tyranor.runtime.diagnostics.TynRuntimeDiagnostics;
+import org.easyrpg.player.R;
 
 import java.io.File;
 

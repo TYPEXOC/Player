@@ -11,6 +11,7 @@ import android.provider.Settings;
 import android.widget.Toast;
 
 import com.tyranor.runtime.diagnostics.TynRuntimeDiagnostics;
+import org.easyrpg.player.R;
 
 import org.easyrpg.player.player.EasyRpgPlayerActivity;
 

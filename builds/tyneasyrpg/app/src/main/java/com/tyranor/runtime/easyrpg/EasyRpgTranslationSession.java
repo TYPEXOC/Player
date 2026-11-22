@@ -372,6 +372,13 @@ final class EasyRpgTranslationSession {
         }
     }
 
+    private void appendDiagnostic(String message, Throwable error) {
+        File sessionDir = TynSession.current();
+        if (sessionDir != null) {
+            com.tyranor.runtime.diagnostics.TynRuntimeDiagnostics.append(sessionDir, message, error);
+        }
+    }
+
     /** Guard wrapper enforcing the translation payload size limit. */
     private static final class CountingInputStream extends InputStream {
         private final InputStream delegate;

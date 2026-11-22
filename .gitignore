@@ -123,3 +123,4 @@ eboot.bin
 *.pem
 *.keystore
 *.jks
+local.properties

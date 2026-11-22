@@ -375,13 +375,14 @@ public class EasyRpgPlayerActivity extends SDLActivity implements NavigationView
                 Color.WHITE,
                 darkModeFlag == Configuration.UI_MODE_NIGHT_YES,
                 () -> false,
-                () -> {},
-                () -> {},
-                () -> {},
+                () -> kotlin.Unit.INSTANCE,
+                () -> kotlin.Unit.INSTANCE,
+                () -> kotlin.Unit.INSTANCE,
                 () -> {
                     if (mSurface != null) {
                         mSurface.requestFocus();
                     }
+                    return kotlin.Unit.INSTANCE;
                 });
         }
         cheatPanel.show();
