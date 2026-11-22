@@ -82,10 +82,18 @@ jobs:
             exit $rc
           fi
 
-      - name: Upload APK
+      - name: Upload arm64-v8a APK
         uses: actions/upload-artifact@v4
         with:
-          name: tyneasyrpg-debug
-          path: builds/tyneasyrpg/app/build/outputs/apk/**/debug/*.apk
+          name: tyneasyrpg-debug-arm64-v8a
+          path: builds/tyneasyrpg/app/build/outputs/apk/arm64/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload armeabi-v7a APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tyneasyrpg-debug-armeabi-v7a
+          path: builds/tyneasyrpg/app/build/outputs/apk/armv7/debug/*.apk
           if-no-files-found: error
           retention-days: 14
