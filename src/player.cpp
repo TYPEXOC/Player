@@ -257,6 +257,8 @@ void Player::MainLoop() {
 			}
 		}
 
+		translation.ProcessPendingReload();
+
 		Scene::old_instances.clear();
 		Scene::instance->MainFunction();
 

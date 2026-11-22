@@ -240,6 +240,28 @@ void Translation::SelectLanguageAsync(FileRequestResult*, std::string_view lang_
 	Scene::instance->OnTranslationChanged();
 }
 
+void Translation::RequestExternalReload() {
+	external_reload_pending.store(true, std::memory_order_release);
+}
+
+void Translation::ProcessPendingReload() {
+	if (!external_reload_pending.exchange(false, std::memory_order_acq_rel)) {
+		return;
+	}
+
+	std::string lang_id = current_language.lang_dir;
+	if (lang_id.empty() && !languages.empty()) {
+		lang_id = languages.front().lang_dir;
+	}
+	if (lang_id.empty()) {
+		Output::Debug("External translation reload requested but no language is known");
+		return;
+	}
+
+	Output::Debug("External translation update detected; reloading language '{}'", lang_id);
+	SelectLanguage(lang_id);
+}
+
 void Translation::RequestAndAddMap(int map_id) {
 	if (current_language.lang_dir.empty()) {
 		return;

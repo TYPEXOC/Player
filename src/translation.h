@@ -22,6 +22,7 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <atomic>
 #include <unordered_map>
 
 #include "async_handler.h"
@@ -208,6 +209,19 @@ public:
 	void SelectLanguage(std::string_view lang_id);
 
 	/**
+	 * Request a reload of the active language (or the first known one).
+	 * Thread-safe; the reload runs on the game thread once it processes
+	 * the request in ProcessPendingReload.
+	 */
+	void RequestExternalReload();
+
+	/**
+	 * Execute a pending external reload, if any. Called on the game thread
+	 * from the main loop.
+	 */
+	void ProcessPendingReload();
+
+	/**
 	 * Does a async fetch of a map po file.
 	 * Only used by the web player.
 	 *
@@ -333,6 +347,10 @@ private:
 	std::vector<FileRequestBinding> requests;
 	FileRequestBinding map_request;
 	int request_counter = -1;
+
+	// Set by external hosts (e.g. an Android runtime module) to trigger a
+	// language reload on the game thread; polled by ProcessPendingReload.
+	std::atomic<bool> external_reload_pending{false};
 };
 
 #endif  // EP_TRANSLATION_H
