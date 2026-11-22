@@ -1,0 +1,134 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.tyranor.runtime.easyrpg'
+    compileSdk 37
+
+    buildFeatures {
+        prefab = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        // TYN discovers this package through the runtime-module action.
+        applicationId "com.tyranor.runtime.easyrpg"
+        minSdk 23
+        targetSdk 37
+        versionCode 1
+        versionName "0.1.0-tyn.1"
+        archivesBaseName = "tyn-easyrpg-$versionName"
+        ndk.debugSymbolLevel = 'FULL'
+        ndkVersion = "28.2.13676358"
+        externalNativeBuild {
+            cmake {
+                arguments "-DPLAYER_GRADLE_BUILD=ON",
+                        "-DBUILD_SHARED_LIBS=ON",
+                        "-DPLAYER_ENABLE_TESTS=OFF"
+                if (project.hasProperty("toolchainDirs") && project.toolchainDirs) {
+                    arguments.add('-DPLAYER_ANDROID_TOOLCHAIN_PATH=' + project.toolchainDirs)
+                }
+                if (project.hasProperty("cmakeOptions")) {
+                    arguments.addAll(project.cmakeOptions.split(" "))
+                }
+            }
+        }
+    }
+
+    signingConfigs {
+        anyplay {
+            def ks = System.getenv('ANYPLAY_KEYSTORE_FILE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('ANYPLAY_STORE_PASSWORD')
+                keyAlias System.getenv('ANYPLAY_KEY_ALIAS')
+                keyPassword System.getenv('ANYPLAY_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            buildConfigField "boolean", "TYN_VERBOSE_DIAGNOSTICS", "false"
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // An UNSIGNED APK cannot be installed on Android; fall back to the
+            // debug key when the CI keystore secrets are absent (local builds).
+            signingConfig System.getenv('ANYPLAY_KEYSTORE_FILE') ? signingConfigs.anyplay : signingConfigs.debug
+        }
+        debug {
+            debuggable true
+            jniDebuggable true
+            buildConfigField "boolean", "TYN_VERBOSE_DIAGNOSTICS", "true"
+            signingConfig System.getenv('ANYPLAY_KEYSTORE_FILE') ? signingConfigs.anyplay : signingConfigs.debug
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include(*(project.findProperty('tynAbis') ?: 'arm64-v8a').split(','))
+            universalApk false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError = false
+        disable 'MissingTranslation'
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("${project.findProperty('playerSrc') ?: '../../../'}/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+}
+
+dependencies {
+    implementation files(fetchSdlAar())
+    implementation 'androidx.appcompat:appcompat:1.8.0'
+    implementation "androidx.activity:activity:1.13.0"
+    implementation 'com.google.android.material:material:1.14.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.2'
+    implementation 'androidx.documentfile:documentfile:1.1.0'
+    implementation 'androidx.core:core:1.17.0'
+    implementation 'org.ini4j:ini4j:0.5.4'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.20'
+}
+
+// Downloads the SDL3 AAR from the official libsdl-org release archive and
+// unpacks it next to the project so SDLActivity can load libSDL3.so.
+def fetchSdlAar() {
+    def sdlVersion = '3.4.20'
+    def sdlAarFile = layout.projectDirectory.file("SDL3-${sdlVersion}.aar").asFile
+    if (sdlAarFile.exists()) {
+        return sdlAarFile
+    }
+
+    def sdlZipFile = layout.buildDirectory.file("SDL3-devel-${sdlVersion}-android.zip").get().asFile
+    sdlZipFile.parentFile.mkdirs()
+    println "Downloading SDL ${sdlVersion} AAR..."
+    new URL("https://github.com/libsdl-org/SDL/releases/download/release-${sdlVersion}/SDL3-devel-${sdlVersion}-android.zip")
+        .withInputStream { i -> sdlZipFile.withOutputStream { it << i } }
+    copy {
+        from zipTree(sdlZipFile)
+        into sdlAarFile.parentFile
+        include '**/*.aar'
+        eachFile { fcp ->
+            fcp.relativePath = new RelativePath(true, "SDL3-${sdlVersion}.aar")
+        }
+        includeEmptyDirs = false
+    }
+    return sdlAarFile
+}

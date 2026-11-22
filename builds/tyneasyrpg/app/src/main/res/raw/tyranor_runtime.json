@@ -1,0 +1,19 @@
+{
+  "protocol": 1,
+  "label": "TYN EasyRPG",
+  "capabilities": ["translation"],
+  "translationRule": "mtool-json",
+  "scan": {
+    "match": "all",
+    "extensions": [".ldb"],
+    "markers": ["RPG_RT.ldb"]
+  },
+  "settings": {
+    "version": 1,
+    "items": [
+      { "key": "padEnabled", "type": "boolean", "title": "显示虚拟按键", "default": true },
+      { "key": "cheatsEnabled", "type": "boolean", "title": "启用作弊菜单", "default": true },
+      { "key": "encoding", "type": "text", "title": "文本编码", "description": "留空自动检测；例如 932(Shift-JIS)、936(GBK)、65001(UTF-8)", "default": "", "maxLength": 16 }
+    ]
+  }
+}

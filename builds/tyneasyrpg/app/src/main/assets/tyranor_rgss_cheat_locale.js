@@ -1,0 +1,334 @@
+(function () {
+  "use strict";
+
+  var languageTag = String(window.TyranorModLanguageTag || "").toLowerCase();
+  var language = languageTag.indexOf("en") === 0 ? "en" : languageTag.indexOf("ja") === 0 ? "ja" : "zh";
+  var dictionaries = {
+    zh: { "装备动作": "装备", "卸下动作": "卸下", "事件页开关": "开关", "事件解释器按钮": "事件解释器", "宝可梦修改器": "宝可梦修改器", "HP/PP不减": "HP/PP不减", "传送点": "传送点", "地图大小": "地图大小", "点击地图选择格子": "点击地图选择格子", "已选格": "已选格", "点击格子选中坐标；再用下方按钮传送或查看事件；按住拖动地图可平移；点击遮罩或 × 关闭": "点击格子选中坐标；再用下方按钮传送或查看事件；按住拖动地图可平移；点击遮罩或 × 关闭", "缩小": "缩小", "放大": "放大", "地图格": "地图格", "该格没有事件": "该格没有事件", "选择事件": "选择事件", "地图边界": "地图边界", "敌人/可移动事件": "敌人/可移动事件", "宝箱/道具事件": "宝箱/道具事件", "战斗单位恢复": "恢复", "战斗清除状态": "清除状态" },
+    en: {
+      "Tyranor RGSS 修改器": "Tyranor RGSS Cheats",
+      "RPG Maker 修改器": "RPG Maker Cheats",
+      "RPG Maker RGSS 修改器": "RPG Maker RGSS Cheats",
+      "宝可梦修改器": "Pokémon Cheats",
+      "RGSS 游戏修改器": "RGSS Cheats", "快捷操作": "Quick actions",
+      "当前游戏币": "Current coins", "游戏币已修改": "Coins updated", "队伍恢复": "Party recovery", "恢复全队宝可梦": "Recover Pokémon party",
+      "获得宝可梦": "Obtain Pokémon", "搜索宝可梦名称或编号": "Search Pokémon by name or ID", "获得": "Obtain", "队伍已满，无法继续获得宝可梦": "Party is full; you can't add more Pokémon", "战斗中无法管理宝可梦仓库": "Storage changes are unavailable during battle", "读取失败": "Read failed", "没有匹配宝可梦": "No matching Pokémon", "宝可梦已获得": "Pokémon obtained", "请输入 1 到 100 的等级": "Enter a level from 1 to 100", "全部": "All",
+      "道具": "Items", "药品": "Medicine", "精灵球": "Poké Balls", "技能机": "TMs", "树果": "Berries", "邮件": "Mail", "对战道具": "Battle Items", "重要物品": "Key Items",
+      "个体属性": "Individual traits", "性格": "Nature", "特性": "Ability", "形态": "Form", "性别": "Gender", "雄性": "Male", "雌性": "Female", "闪光": "Shiny", "超闪光": "Super Shiny", "是": "Yes", "否": "No", "当前宝可梦没有可修改的个体属性": "No editable individual traits are available for this Pokémon", "个体属性已修改": "Individual trait updated", "队伍顺序已调整": "Party order updated", "上移": "Move up", "下移": "Move down", "招式 PP 已修改": "Move PP updated", "PP 上升": "PP Up", "请输入有效的 PP 值": "Enter a valid PP value", "PP 上升值必须为 0 到 3": "PP Up must be from 0 to 3", "亲密度": "Friendship",
+      "地图操作": "Map actions", "地图事件": "Map events", "搜索地图 ID / 名称": "Search map ID or name", "当前位置": "Current location",
+      "详情": "Details", "事件页": "Event page", "指令数": "Commands", "条件数": "Conditions", "无条件": "No conditions",
+      "事件没有可显示的页面": "This event has no displayable pages", "无法读取所选事件详情": "Couldn't read the selected event", "事件页没有指令": "This event page has no commands",
+      "没有匹配地图": "No matching maps", "地图列表对当前游戏不可用": "Map list is unavailable in this game", "事件列表对当前游戏不可用": "Events are unavailable in this game",
+      "所选地图没有事件": "The selected map has no events", "当前不在战斗中": "Not in battle", "强制战败": "Force defeat",
+      "战斗操作已执行": "Battle action applied", "请输入有效的地图 ID 和坐标": "Enter a valid map ID and coordinates", "传送完成": "Warp complete",
+      "独立开关已更新": "Event self switch updated", "事件开关已更新": "Event switches updated", "无法读取当前地图": "Couldn't read the current map", "无法读取所选地图": "Couldn't read the selected map",
+      "确定读取这个存档吗？当前未保存的进度会丢失。": "Load this save? Unsaved progress will be lost.", "确定删除这个存档吗？此操作无法撤销。": "Delete this save? This cannot be undone.",
+      "确认": "Confirm", "取消": "Cancel", "确定恢复虚拟按键默认布局吗？": "Restore the default virtual control layout?", "虚拟按键已恢复默认": "Virtual controls restored",
+      "宝可梦队伍能力正在初始化": "Pokémon party data is initializing", "背包能力正在初始化": "Bag data is initializing", "游戏开关/变量能力正在初始化": "Game switches and variables are initializing",
+      "宝可梦专属修改面板": "Pokémon-specific cheat panel", "队伍、背包和游戏数据只通过当前 Essentials 游戏接口修改。": "Party, bag and game data use the current Essentials runtime interfaces.",
+      "重要修改前建议先保存游戏。": "Save before making important changes.", "正在识别当前游戏类型…": "Detecting game type…", "无野生遇敌": "No wild encounters",
+      "显示空物品": "Show items with zero quantity", "显示空选项": "Show unnamed entries", "背包里没有物品；搜索名称可添加物品": "No bag items are present; search by name to add one",
+      "上一页": "Previous", "下一页": "Next", "共": "Total", "项": "entries", "请输入有效金额": "Enter a valid amount",
+      "变量已修改": "Variable updated", "设置已更新": "Setting updated", "请输入 0 到 999999 的整数": "Enter a whole number from 0 to 999999",
+      "快捷作弊": "Cheats", "背包": "Bag", "背包（当前游戏不可用）": "Bag (unavailable in this game)",
+      "角色（当前游戏不可用）": "Characters (unavailable in this game)", "开关/变量": "Switches / variables", "地图/事件": "Map / events",
+      "存档（当前游戏不可用）": "Saves (unavailable in this game)", "此功能对当前宝可梦游戏不可用": "Unavailable in this Pokémon game",
+      "队伍与资源": "Party and resources", "探索与对话": "Exploration and dialogue", "金钱": "Money", "金钱：": "Money:", "当前金钱": "Current money",
+      "金钱已修改": "Money updated", "金钱已拉满": "Money maxed", "背包物品不减": "Unlimited bag items", "关闭野生遭遇": "Disable wild encounters",
+      "招式 PP 不减": "Unlimited move PP", "恢复全队宝可梦": "Recover Pokémon party", "宝可梦队伍已恢复": "Pokémon party recovered",
+      "宝可梦已恢复": "Pokémon recovered", "我方宝可梦": "Your Pokémon", "对手宝可梦": "Opponent's Pokémon",
+      "背包物品": "Bag items", "搜索背包物品": "Search bag items", "背包功能对当前游戏不可用": "The bag is unavailable in this game",
+      "角色、职业、武器和护甲属于 RPG Maker 功能，对当前宝可梦游戏不可用。请使用宝可梦页修改队伍、招式和携带物品。": "Characters, classes, weapons and armor are RPG Maker features and are unavailable in this Pokémon game. Edit your party, moves and held items on the Pokémon tab.",
+      "存档管理对当前游戏不可用": "Save management is unavailable in this game",
+      "本面板按当前游戏公开的宝可梦能力显示功能。宝可梦队伍、背包和游戏数据通过对应接口修改。": "This panel shows features exposed by the current game. Pokémon, bag and game data are changed through their supported interfaces.",
+      "角色属性、职业、武器和护甲等 RPG Maker 功能对当前游戏不可用。重要修改前建议先保存游戏。": "RPG Maker features such as character stats, classes, weapons and armor are unavailable in this game. Save before making important changes.",
+      "请先进入游戏存档或开始新游戏，修改器正在等待游戏运行时就绪。": "Load a save or start a new game. Waiting for the game runtime.",
+      "打开 RPG Maker 修改器": "Open RPG Maker Cheats",
+      "关闭": "Close",
+      "快捷": "Quick", "物品": "Items", "角色": "Characters", "系统": "System",
+      "地图": "Map", "战斗": "Battle", "存档": "Saves", "键盘": "Keys", "说明": "About",
+      "无敌": "Invincibility", "一击必杀": "One-hit kill", "必定暴击": "Always critical",
+      "HP/MP不减": "Unlimited HP/MP", "TP不减": "Unlimited TP", "自定义点数不减": "Lock custom points",
+      "HP/PP不减": "Unlimited HP/PP",
+      "金币不减": "Unlimited gold", "游戏币不减": "Unlimited coins", "异常状态免疫": "Status ailment immunity",
+      "物品不减": "Unlimited items", "无遇敌": "No random encounters", "移动加速": "Speed boost",
+      "快速文字": "Fast text", "必定逃跑成功": "Always escape", "技能不消耗": "Free skill cost",
+      "角色与资源": "Character and resources", "探索与战斗": "Explore & battle", "探索": "Exploration", "战斗": "Battle",
+      "游戏内场景": "In-game scenes", "临时作弊开关": "Temporary cheats", "成长倍率": "Growth multipliers", "修改后立即生效": "Takes effect immediately",
+      "移动与事件": "Movement & events", "快捷开关": "Quick toggles", "当前游戏不支持此场景": "This scene is not supported in this game",
+      "灰色入口点按查看原因": "Tap a gray shortcut to see why it is unavailable",
+      "正在读取当前游戏能力…": "Checking this game's available features…",
+      "恢复当前队伍中的所有宝可梦 HP 与招式 PP。": "Restore HP and move PP for every Pokémon in the current party.",
+      "战斗结算倍率": "Battle settlement multipliers", "努力值倍率": "EV multiplier", "努力值倍率已设置": "EV multiplier updated",
+      "当前游戏没有可用的战斗经验结算接口": "No battle EXP reward hook is available in this game",
+      "当前游戏没有可用的努力值结算接口": "No battle EV reward hook is available in this game", "倍率必须在 0 到 100 之间": "Multiplier must be between 0 and 100",
+      "当前游戏没有可用的角色资源开关": "No character or resource cheats are available in this game", "当前游戏没有可用的探索开关": "No exploration cheats are available in this game",  "当前游戏不支持成长倍率": "Growth multipliers are not supported in this game",
+      "移动速度": "Movement speed", "移动速度已设置": "Movement speed updated", "游戏倍速": "Game speed", "游戏倍速已设置": "Game speed updated",
+      "经验倍率": "EXP multiplier", "掉落倍率": "Drop multiplier", "战斗奖励倍率": "Battle reward multipliers", "经验倍率已设置": "EXP multiplier updated", "掉落倍率已设置": "Drop multiplier updated",
+      "穿墙": "Walk through walls", "事件加速": "Speed up events", "对话快进": "Skip message pauses",
+      "操作失败": "Operation failed", "完成": "Done", "请先进入游戏存档或开始新游戏，修改器正在等待 RPG Maker 运行时就绪。": "Load a save or start a new game. Waiting for the RPG Maker runtime.",
+      "当前金币": "Current gold", "金币：": "Gold:", "设置": "Set", "拉满": "Max", "全体恢复": "Recover party", "刷新面板": "Refresh panel",
+      "当前没有可用的快捷功能": "No quick actions are available",
+      "运行时开关": "Runtime toggles", "金币": "Gold", "队伍": "Party", "物品数据库": "Item database", "物品详情": "Item details", "请选择物品查看详情": "Select an item to view its details", "数量操作": "Quantity controls", "当前数量": "Owned", "已选择": "Selected",
+      "加载中…": "Loading…", "搜索": "Search", "搜索名称": "Search names", "应用": "Apply", "数量": "Quantity",
+      "锁定": "Lock", "名称": "Name", "当前值": "Current value",
+      "物品已锁定": "Item quantity locked", "系统值已锁定": "System value locked", "已取消锁定": "Lock removed",
+      "没有匹配项目": "No matching entries", "当前队伍没有角色": "The party has no characters", "当前游戏没有角色": "This game has no characters",
+      "队伍管理": "Party management", "在队伍中": "In party", "不在队伍中": "Not in party", "搜索角色名称或 ID": "Search characters",
+      "恢复": "Recover", "属性": "Stats", "技能": "Skills", "状态": "States", "装备": "Equipment",
+      "宝可梦": "Pokémon", "当前游戏不支持宝可梦队伍修改": "This game does not support Pokémon party editing", "当前队伍里没有宝可梦": "There are no Pokémon in the current party", "蛋": "Egg", "蛋不能在这里编辑或恢复": "Eggs cannot be edited or recovered here",
+      "当前 HP": "Current HP", "招式": "Moves", "携带物品": "Held item", "IV / EV": "IV / EV", "IV": "IV", "EV": "EV", "状态：": "Status: ", "持有物：": "Held item: ", "招式位": "Move slot", "空": "Empty", "编辑招式": "Edit moves", "替换": "Replace", "清空": "Clear", "选择替换招式": "Choose a replacement move", "搜索名称或编号": "Search by name or ID", "清除状态": "Clear status", "编辑状态": "Edit status", "设置携带物品": "Set held item", "不持有物品": "No held item", "结果过多，请输入更具体的搜索词": "Too many results; enter a more specific search", "编辑 IV / EV": "Edit IV / EV",
+      "数值已修改": "Value updated", "宝可梦已恢复": "Pokémon recovered", "招式已更新": "Moves updated", "状态已更新": "Status updated", "携带物品已更新": "Held item updated", "没有可用的招式位": "No move slots are available", "请输入有效的非负整数": "Enter a valid non-negative integer",
+      "睡眠": "Sleep", "中毒": "Poison", "灼伤": "Burn", "麻痹": "Paralysis", "冰冻": "Frozen", "其他状态": "Other status", "特攻": "Special Attack", "特防": "Special Defense", "速度": "Speed",
+      "职业": "Class", "选择职业": "Select a class", "更换职业": "Change class", "职业已更换": "Class changed", "当前游戏没有职业列表": "No class data is available in this game", "请先选择职业": "Select a class first",
+      "等级": "Level", "经验": "EXP", "最大 HP": "Max HP", "最大 MP": "Max MP", "攻击": "Attack", "防御": "Defense", "魔攻": "Magic Attack", "魔防": "Magic Defense", "敏捷": "Agility", "幸运": "Luck",
+      "已学会技能": "Learned skills", "可学习技能": "Available skills", "当前状态": "Active states", "可附加状态": "Available states",
+      "隐藏空选项": "Hide unnamed entries",
+      "没有已学技能": "No learned skills", "没有可学习技能": "No skills available to learn", "没有当前状态": "No active states", "没有可附加状态": "No states available to add",
+      "技能 ID": "Skill ID", "学习": "Learn", "遗忘": "Forget", "状态 ID": "State ID", "附加": "Add", "移除": "Remove",
+      "搜索技能名称或 ID": "Search skills by name or ID", "搜索状态名称或 ID": "Search states by name or ID",
+      "槽位": "Slot", "武器": "Weapon", "护甲": "Armor", "装备 ID": "Equipment ID", "装备 ID，0=卸下": "Equipment ID (0 to unequip)", "装备槽位": "Equipment slot", "装备类型": "Equipment type", "选择装备": "Select equipment", "当前装备": "Current equipment", "当前装备：": "Equipped:", "当前槽位装备": "Equipped slots", "可选武器": "Available weapons", "可选护甲": "Available armor", "选择左侧槽位后，点击装备": "Choose a slot on the left, then tap Equip", "当前槽位没有可选装备": "No compatible equipment is available for this slot", "当前角色没有此类槽位": "This character has no slot for this type", "卸下装备": "Unequip", "装备动作": "Equip", "卸下动作": "Unequip", "没有可选装备": "No available equipment", "当前角色没有可修改的装备槽位": "This character has no editable equipment slots", "更换": "Change",
+      "无": "None", "开关与变量": "Switches and variables", "开关": "Switch", "变量": "Variable", "设为开": "Set on", "设为关": "Set off", "名称或 ID": "Name or ID",
+      "地图": "Map", "事件": "Events", "地图 ID": "Map ID", "传送": "Warp", "地图操作": "Map actions", "传送到事件": "Warp to event", "事件详情": "Event details", "独立开关": "Self switch", "事件开关全开": "Enable all event switches", "事件开关全关": "Disable all event switches", "事件操作": "Event actions", "浏览": "Browse",
+      "搜索地图名称 / ID": "Search map name or ID", "搜索 ID / 名称": "Search ID or name", "你在这里": "Current location",
+      "选择": "Select", "没有匹配地图": "No matching maps", "当前地图没有事件（进入地图场景后打开）": "No events on this map. Open the panel from a map scene.",
+      "在左侧选择事件查看详情": "Select an event on the left to view its details", "独立开关:": "Self switches:",
+      ":开": ": On", ":关": ": Off", "全开": "All on", "全关": "All off", "迷你地图": "Minimap",
+      "名称:": "Name:", "无法通行": "Impassable", "可通行": "Passable", "事件": "Event", "你": "Player", "地图边界": "Map edge", "敌人/可移动事件": "Enemy / movable event", "宝箱/道具事件": "Chest / item event", "传送点": "Teleport", "地图大小": "Map zoom", "缩小": "Zoom out", "放大": "Zoom in", "地图格": "Map tile", "点击地图选择格子": "Select a map tile", "已选格": "Selected tile", "点击格子选中坐标；再用下方按钮传送或查看事件；按住拖动地图可平移；点击遮罩或 × 关闭": "Select a tile, then use the buttons below to warp or inspect events. Drag the map to pan. Tap outside or × to close.", "该格没有事件": "No event on this tile", "选择事件": "Choose an event",
+      "点击事件块选中该事件；点外部区域或 × 关闭": "Tap an event tile to select it. Tap outside or × to close.",
+      "已选中事件 #": "Selected event #", "当前不在战斗中": "Not in battle", "胜利": "Victory", "战败": "Defeat", "逃跑": "Escape",
+      "队伍": "Party", "敌方": "Enemies", "数量：": "Count:", "状态：": "Status: ", "正常": "Normal",
+      "完全恢复": "Restore", "MP 补满": "MP Max", "TP 补满": "TP Max", "战斗清除状态": "Clear", "HP 设为 1": "HP 1", "战斗单位恢复": "Restore", "单位已恢复": "Unit recovered", "战斗操作已执行": "Battle action applied",
+      "消灭全部敌人": "Defeat all enemies", "强制胜利": "Force victory", "强制战败": "Force defeat", "强制逃跑": "Force escape", "战斗操作": "Battle actions", "战斗开关": "Battle modifiers", "当前游戏没有可用的战斗开关": "No battle modifiers are available in this game",
+      "所选地图全部事件独立开关:": "Self-switches for all events on selected map:", "全部开启": "Enable all", "全部关闭": "Disable all", "该事件独立开关:": "Selected event self-switches:", "所选地图事件开关已全开": "Enabled switches for all events on selected map", "所选地图事件开关已全关": "Disabled switches for all events on selected map",
+      "事件条件开关已更新": "Event condition switch updated",
+      "名称:": "Name:", "描述:": "Description:", "独立开关:": "Self-switches:", "事件解释器": "Event interpreter", "事件解释器按钮": "Interpreter", "事件页开关": "Cond.", "事件条件": "Event conditions", "条件": "Conditions", "点击开关或独立开关条件可单独切换": "Tap a switch or self-switch condition to toggle it", "事件长度": "Commands", "无条件": "No conditions", "无法读取所选事件详情": "Unable to read the selected event", "事件没有可显示的页面": "This event has no pages to display", "此事件页没有指令": "This event page has no commands", "点击指令可展开查看参数": "Tap a command to expand its parameters", "开": "On", "关": "Off", "指令数": "Commands", "条件数": "Conditions",
+      "结束": "End", "显示文本": "Show Text", "显示选项": "Show Choices", "数值输入": "Input Number", "物品选择": "Select Item", "滚动文本": "Scroll Text", "注释": "Comment", "条件分支": "Conditional Branch", "循环": "Loop", "中断循环": "Break Loop", "事件处理结束": "Exit Event Processing", "调用公共事件": "Call Common Event", "标签": "Label", "跳转标签": "Jump to Label", "控制开关": "Control Switches", "控制变量": "Control Variables", "控制独立开关": "Control Self Switch", "传送玩家": "Transfer Player", "设置事件位置": "Set Event Location", "设置移动路线": "Set Move Route", "等待": "Wait", "播放 BGM": "Play BGM", "播放 BGS": "Play BGS", "播放 ME": "Play ME", "播放 SE": "Play SE", "战斗处理": "Battle Processing", "商店处理": "Shop Processing", "增减 HP": "Change HP", "增减 MP": "Change MP", "更改状态": "Change State", "全体恢复": "Recover All", "打开菜单": "Open Menu", "打开存档画面": "Open Save Screen", "游戏结束": "Game Over", "脚本": "Script", "文本内容": "Text", "选项分支": "Choice Branch", "取消分支": "Cancel Branch", "结束选项分支": "End Choice Branch", "结束条件分支": "End Branch", "重复循环": "Repeat Above", "胜利时": "When Victory", "逃跑时": "When Escape", "失败时": "When Defeat", "结束战斗分支": "End Battle Branch", "脚本行": "Script Line", "事件指令": "Event Command",
+      "存档管理": "Save management", "读取中…": "Loading…", "存档 ": "Save ", "已有数据": "Existing data", "空": "Empty",
+      "保存": "Save", "覆盖": "Overwrite", "读取": "Load", "删除": "Delete", "Tyranor 修改器": "Tyranor Cheats", "版本 ": "Version ",
+      "加载": "Load", "菜单": "Menu", "调试": "Debug",
+      "修改器只操作当前 RGSS 游戏的运行时对象。部分深度定制脚本可能覆盖标准引擎 API；遇到异常时可在单游戏设置中关闭修改器。": "Cheats only modify the current RGSS game's runtime objects. Custom scripts may override standard engine APIs. If errors occur, disable cheats in that game's settings.",
+      "事件加速和对话快进可能跳过演出或等待，建议先保存游戏。": "Event speed and message skip may skip scenes or waits. Save first.",
+      "虚拟按键": "Virtual controls", "按键层由应用原生实现，可自定义按键的位置、文字、大小与输出键位。进入编辑后：": "Virtual controls are native to the app. You can edit their positions, labels, sizes, and key outputs:",
+      "点按按键选中，拖拽调整位置": "Tap a control to select it, then drag to move it", "右侧面板改文字 / 尺寸 / 键位": "Edit its label, size, or key on the side panel",
+      "可复制、删除按键，或恢复默认": "Copy or delete controls, or restore defaults", "保存后立即生效": "Changes take effect after saving",
+      "进入按键编辑": "Edit controls", "恢复默认": "Restore defaults", "当前未启用虚拟按键。可在应用的引擎设置中开启。": "Virtual controls are disabled. Enable them in the app's engine settings.",
+      "设置已保存": "Setting saved", "金币已修改": "Gold updated", "金币已拉满": "Gold maxed", "队伍已恢复": "Party recovered",
+      "数量已修改": "Quantity updated", "角色已恢复": "Character recovered", "队伍成员已更新": "Party membership updated", "属性已修改": "Stats updated", "装备已更换": "Equipment changed", "装备已卸下": "Equipment unequipped",
+      "系统值已修改": "System value updated", "独立开关 A–D 已全开": "Self switches A–D enabled", "独立开关 A–D 已全关": "Self switches A–D disabled",
+      "已预约传送": "Warp queued", "保存完成": "Save complete", "读取完成": "Load complete", "存档已删除": "Save deleted", "已恢复默认": "Defaults restored",
+      "当前未启用虚拟按键": "Virtual controls are disabled", "RGSS 修改器桥未连接": "RGSS cheat bridge is unavailable",
+      "当前类别": "Category", "物品数据库": "Item database", "地图列表不可用": "Map list unavailable", "操作失败": "Operation failed",
+      "已有数据": "Existing data", "空": "Empty", "全开": "All on", "全关": "All off",
+      "进度": "Progress", "PC 盒子": "PC boxes", "上一盒": "Previous box", "下一盒": "Next box", "存入当前盒子": "Deposit into this box",
+      "从队伍选择宝可梦即可存入当前盒子": "Choose a Pokémon from your party to deposit it here", "已选择队伍中的宝可梦": "Party Pokémon selected",
+      "存入 PC": "Deposit", "宝可梦已存入 PC": "Pokémon deposited", "取出到队伍": "Withdraw to party", "宝可梦已取出到队伍": "Pokémon moved to party",
+      "释放": "Release", "宝可梦已释放": "Pokémon released", "确定释放这只宝可梦吗？此操作无法撤销。": "Release this Pokémon? This cannot be undone.",
+      "这个盒子是空的": "This box is empty", "无法读取 PC 盒子": "Couldn't read PC storage", "徽章与图鉴": "Badges and Pokédex",
+      "徽章": "Badge", "获得全部徽章": "Obtain all badges", "移除全部徽章": "Remove all badges", "徽章已更新": "Badges updated",
+      "拥有图鉴": "Own the Pokédex", "地区图鉴": "Regional Pokédex", "当前游戏没有公开徽章或图鉴接口": "This game exposes no badge or Pokédex controls",
+      "进度已更新": "Progress updated", "修改昵称": "Edit nickname", "昵称已修改": "Nickname updated", "留空或输入原物种名称可清除昵称": "Leave blank or enter the species name to clear the nickname",
+      "剩余孵化步数": "Steps until hatch", "快速孵化": "Quick hatch", "蛋只能调整孵化进度": "Eggs can only have their hatch progress changed",
+      "蛋只需再走一步即可孵化": "This egg will hatch after one more step"
+    },
+    ja: {
+      "Tyranor RGSS 修改器": "Tyranor RGSS 改造パネル",
+      "RPG Maker 修改器": "RPG Maker 改造パネル",
+      "RPG Maker RGSS 修改器": "RPG Maker RGSS 改造パネル",
+      "宝可梦修改器": "ポケモン改造パネル",
+      "RGSS 游戏修改器": "RGSS 改造パネル", "快捷操作": "クイック操作",
+      "当前游戏币": "現在のコイン", "游戏币已修改": "コインを変更しました", "队伍恢复": "パーティ回復", "恢复全队宝可梦": "ポケモン全員を回復",
+      "获得宝可梦": "ポケモンを入手", "搜索宝可梦名称或编号": "ポケモン名または ID で検索", "获得": "入手", "队伍已满，无法继续获得宝可梦": "パーティがいっぱいです。これ以上ポケモンを追加できません", "战斗中无法管理宝可梦仓库": "バトル中はボックスを操作できません", "读取失败": "読み込み失敗", "没有匹配宝可梦": "一致するポケモンがありません", "宝可梦已获得": "ポケモンを入手しました", "请输入 1 到 100 的等级": "レベルを 1～100 で入力してください", "全部": "すべて",
+      "道具": "どうぐ", "药品": "くすり", "精灵球": "モンスターボール", "技能机": "わざマシン", "树果": "きのみ", "邮件": "メール", "对战道具": "バトルアイテム", "重要物品": "大切なもの",
+      "个体属性": "個体の特性", "性格": "せいかく", "特性": "とくせい", "形态": "フォルム", "性别": "性別", "雄性": "オス", "雌性": "メス", "闪光": "色違い", "超闪光": "スクエア色違い", "是": "はい", "否": "いいえ", "当前宝可梦没有可修改的个体属性": "このポケモンに変更できる個体属性はありません", "个体属性已修改": "個体属性を変更しました", "队伍顺序已调整": "パーティの順序を変更しました", "上移": "上へ", "下移": "下へ", "招式 PP 已修改": "わざの PP を変更しました", "PP 上升": "ポイントアップ", "请输入有效的 PP 值": "有効な PP 値を入力してください", "PP 上升值必须为 0 到 3": "ポイントアップは 0～3 で入力してください", "亲密度": "なつき度",
+      "地图操作": "マップ操作", "地图事件": "マップイベント", "搜索地图 ID / 名称": "マップ ID / 名前を検索", "当前位置": "現在地",
+      "详情": "詳細", "事件页": "イベントページ", "指令数": "コマンド", "条件数": "条件", "无条件": "条件なし",
+      "事件没有可显示的页面": "表示できるページがありません", "无法读取所选事件详情": "イベント詳細を読み取れません", "事件页没有指令": "このページにコマンドはありません",
+      "没有匹配地图": "一致するマップがありません", "地图列表对当前游戏不可用": "このゲームではマップ一覧を利用できません", "事件列表对当前游戏不可用": "このゲームではイベントを利用できません",
+      "所选地图没有事件": "選択したマップにイベントはありません", "当前不在战斗中": "戦闘中ではありません", "强制战败": "強制敗北",
+      "战斗操作已执行": "戦闘操作を実行しました", "请输入有效的地图 ID 和坐标": "有効なマップ ID と座標を入力してください", "传送完成": "移動しました",
+      "独立开关已更新": "セルフスイッチを更新しました", "事件开关已更新": "イベントスイッチを更新しました", "无法读取当前地图": "現在のマップを読み取れません", "无法读取所选地图": "選択したマップを読み取れません",
+      "确定读取这个存档吗？当前未保存的进度会丢失。": "このセーブを読み込みますか？未保存の進行状況は失われます。", "确定删除这个存档吗？此操作无法撤销。": "このセーブを削除しますか？元に戻せません。",
+      "确认": "確認", "取消": "キャンセル", "确定恢复虚拟按键默认布局吗？": "仮想ボタンを初期設定に戻しますか？", "虚拟按键已恢复默认": "仮想ボタンを初期設定に戻しました",
+      "宝可梦队伍能力正在初始化": "ポケモンのパーティデータを読み込み中", "背包能力正在初始化": "バッグデータを読み込み中", "游戏开关/变量能力正在初始化": "スイッチと変数を読み込み中",
+      "宝可梦专属修改面板": "ポケモン専用の改造パネル", "队伍、背包和游戏数据只通过当前 Essentials 游戏接口修改。": "パーティ、バッグ、ゲームデータはこの Essentials ゲームのインターフェースで変更します。",
+      "重要修改前建议先保存游戏。": "重要な変更の前にセーブしてください。", "正在识别当前游戏类型…": "ゲームの種類を確認中…", "无野生遇敌": "野生ポケモンと遭遇しない",
+      "显示空物品": "所持数 0 の道具も表示", "显示空选项": "名前のない項目を表示", "背包里没有物品；搜索名称可添加物品": "バッグに道具がありません。名前で検索して追加してください",
+      "上一页": "前へ", "下一页": "次へ", "共": "合計", "项": "件", "请输入有效金额": "有効な金額を入力してください",
+      "变量已修改": "変数を変更しました", "设置已更新": "設定を更新しました", "请输入 0 到 999999 的整数": "0 から 999999 の整数を入力してください",
+      "快捷作弊": "チート", "背包": "バッグ", "背包（当前游戏不可用）": "バッグ（このゲームでは利用不可）",
+      "角色（当前游戏不可用）": "キャラクター（このゲームでは利用不可）", "开关/变量": "スイッチ / 変数", "地图/事件": "マップ / イベント",
+      "存档（当前游戏不可用）": "セーブ（このゲームでは利用不可）", "此功能对当前宝可梦游戏不可用": "このポケモンゲームでは利用できません",
+      "队伍与资源": "パーティと所持品", "探索与对话": "探索と会話", "金钱": "お金", "金钱：": "お金:", "当前金钱": "現在のお金",
+      "金钱已修改": "お金を変更しました", "金钱已拉满": "お金を最大にしました", "背包物品不减": "バッグの道具を減らさない", "关闭野生遭遇": "野生ポケモンとの遭遇を無効化",
+      "招式 PP 不减": "わざの PP を減らさない", "恢复全队宝可梦": "ポケモン全員を回復", "宝可梦队伍已恢复": "ポケモンを回復しました",
+      "宝可梦已恢复": "ポケモンを回復しました", "我方宝可梦": "味方のポケモン", "对手宝可梦": "相手のポケモン",
+      "背包物品": "バッグの道具", "搜索背包物品": "バッグの道具を検索", "背包功能对当前游戏不可用": "このゲームではバッグを利用できません",
+      "角色、职业、武器和护甲属于 RPG Maker 功能，对当前宝可梦游戏不可用。请使用宝可梦页修改队伍、招式和携带物品。": "キャラクター、職業、武器、防具は RPG Maker の機能で、このポケモンゲームでは利用できません。ポケモンのタブでパーティ、わざ、持ち物を編集してください。",
+      "存档管理对当前游戏不可用": "このゲームではセーブ管理を利用できません",
+      "本面板按当前游戏公开的宝可梦能力显示功能。宝可梦队伍、背包和游戏数据通过对应接口修改。": "このパネルにはゲームが公開する機能が表示されます。ポケモン、バッグ、ゲームデータは対応するインターフェースで変更します。",
+      "角色属性、职业、武器和护甲等 RPG Maker 功能对当前游戏不可用。重要修改前建议先保存游戏。": "キャラクター能力値、職業、武器、防具などの RPG Maker 機能はこのゲームでは利用できません。重要な変更の前にセーブしてください。",
+      "请先进入游戏存档或开始新游戏，修改器正在等待游戏运行时就绪。": "セーブデータを読み込むか、新しいゲームを開始してください。ゲームの起動を待っています。",
+      "打开 RPG Maker 修改器": "RPG Maker 改造パネルを開く",
+      "关闭": "閉じる",
+      "快捷": "クイック", "物品": "アイテム", "角色": "キャラクター", "系统": "システム",
+      "地图": "マップ", "战斗": "戦闘", "存档": "セーブ", "键盘": "キー設定", "说明": "説明",
+      "无敌": "無敵", "一击必杀": "一撃必殺", "必定暴击": "クリティカル確定",
+      "HP/MP不减": "HP/MP 減少なし", "TP不减": "TP 減少なし", "自定义点数不减": "カスタムポイント固定",
+      "HP/PP不减": "HP/PP 減少なし",
+      "金币不减": "所持金減少なし", "游戏币不减": "コイン減少なし", "异常状态免疫": "状態異常無効",
+      "物品不减": "アイテム減少なし", "无遇敌": "エンカウントなし", "移动加速": "移動速度アップ",
+      "快速文字": "メッセージ高速化", "必定逃跑成功": "逃走成功確定", "技能不消耗": "スキル消費なし",
+      "角色与资源": "キャラクターと所持品", "探索与战斗": "探索と戦闘", "探索": "探索", "战斗": "戦闘",
+      "游戏内场景": "ゲーム内画面", "临时作弊开关": "一時チート", "成长倍率": "成長倍率", "修改后立即生效": "変更後すぐ有効",
+      "移动与事件": "移動とイベント", "快捷开关": "クイック設定", "当前游戏不支持此场景": "このゲームではこの画面を開けません",
+      "灰色入口点按查看原因": "灰色の項目をタップすると理由を表示",
+      "正在读取当前游戏能力…": "このゲームで使える機能を確認中…",
+      "恢复当前队伍中的所有宝可梦 HP 与招式 PP。": "現在のパーティ全員のHPとわざPPを回復します。",
+      "战斗结算倍率": "戦闘報酬倍率", "努力值倍率": "努力値倍率", "努力值倍率已设置": "努力値倍率を変更しました",
+      "当前游戏没有可用的战斗经验结算接口": "このゲームでは戦闘経験値の倍率に対応していません",
+      "当前游戏没有可用的努力值结算接口": "このゲームでは努力値報酬の倍率に対応していません", "倍率必须在 0 到 100 之间": "倍率は0から100の範囲で指定してください",
+      "当前游戏没有可用的角色资源开关": "このゲームで使えるキャラクター・資源チートはありません", "当前游戏没有可用的探索开关": "このゲームで使える探索チートはありません",  "当前游戏不支持成长倍率": "このゲームは成長倍率に対応していません",
+      "移动速度": "移動速度", "移动速度已设置": "移動速度を変更しました", "游戏倍速": "ゲーム速度", "游戏倍速已设置": "ゲーム速度を変更しました",
+      "经验倍率": "経験値倍率", "掉落倍率": "ドロップ倍率", "战斗奖励倍率": "戦闘報酬倍率", "经验倍率已设置": "経験値倍率を変更しました", "掉落倍率已设置": "ドロップ倍率を変更しました",
+      "穿墙": "壁抜け", "事件加速": "イベント高速化", "对话快进": "メッセージ早送り",
+      "操作失败": "操作に失敗しました", "完成": "完了", "请先进入游戏存档或开始新游戏，修改器正在等待 RPG Maker 运行时就绪。": "セーブデータを読み込むか、新しいゲームを開始してください。RPG Maker の起動を待っています。",
+      "当前金币": "現在の所持金", "金币：": "所持金:", "设置": "設定", "拉满": "最大", "全体恢复": "パーティ全回復", "刷新面板": "パネルを更新",
+      "当前没有可用的快捷功能": "利用可能なクイック操作はありません",
+      "运行时开关": "実行中のチート", "金币": "所持金", "队伍": "パーティ", "物品数据库": "アイテム一覧", "物品详情": "アイテム詳細", "请选择物品查看详情": "アイテムを選択すると詳細が表示されます", "数量操作": "個数の操作", "当前数量": "現在の個数", "已选择": "選択済み",
+      "加载中…": "読み込み中…", "搜索": "検索", "搜索名称": "名前を検索", "应用": "適用", "数量": "個数",
+      "锁定": "固定", "名称": "名前", "当前值": "現在値",
+      "物品已锁定": "アイテム数を固定しました", "系统值已锁定": "システム値を固定しました", "已取消锁定": "固定を解除しました",
+      "没有匹配项目": "該当する項目はありません", "当前队伍没有角色": "パーティにキャラクターがいません", "当前游戏没有角色": "このゲームにキャラクターがいません",
+      "队伍管理": "パーティ管理", "在队伍中": "パーティにいる", "不在队伍中": "パーティにいない", "搜索角色名称或 ID": "キャラクター名または ID を検索",
+      "恢复": "回復", "属性": "能力値", "技能": "スキル", "状态": "状態", "装备": "装備",
+      "宝可梦": "ポケモン", "当前游戏不支持宝可梦队伍修改": "このゲームではパーティーのポケモン編集に対応していません", "当前队伍里没有宝可梦": "現在のパーティーにポケモンがいません", "蛋": "タマゴ", "蛋不能在这里编辑或恢复": "タマゴはここで編集・回復できません",
+      "当前 HP": "現在 HP", "招式": "わざ", "携带物品": "持ち物", "IV / EV": "個体値 / 努力値", "IV": "個体値", "EV": "努力値", "状态：": "状態：", "持有物：": "持ち物：", "招式位": "わざ枠", "空": "空き", "编辑招式": "わざを編集", "替换": "変更", "清空": "クリア", "选择替换招式": "入れ替えるわざを選択", "搜索名称或编号": "名前または ID で検索", "清除状态": "状態異常を治す", "编辑状态": "状態を編集", "设置携带物品": "持ち物を設定", "不持有物品": "持ち物なし", "结果过多，请输入更具体的搜索词": "結果が多すぎます。検索語を絞ってください", "编辑 IV / EV": "個体値 / 努力値を編集",
+      "数值已修改": "数値を更新しました", "宝可梦已恢复": "ポケモンを回復しました", "招式已更新": "わざを更新しました", "状态已更新": "状態を更新しました", "携带物品已更新": "持ち物を更新しました", "没有可用的招式位": "使用できるわざ枠がありません", "请输入有效的非负整数": "0 以上の整数を入力してください",
+      "睡眠": "ねむり", "中毒": "どく", "灼伤": "やけど", "麻痹": "まひ", "冰冻": "こおり", "其他状态": "その他の状態", "特攻": "特攻", "特防": "特防", "速度": "すばやさ",
+      "职业": "職業", "选择职业": "職業を選択", "更换职业": "職業を変更", "职业已更换": "職業を変更しました", "当前游戏没有职业列表": "職業データがありません", "请先选择职业": "職業を選択してください",
+      "等级": "レベル", "经验": "経験値", "最大 HP": "最大 HP", "最大 MP": "最大 MP", "攻击": "攻撃", "防御": "防御", "魔攻": "魔法攻撃", "魔防": "魔法防御", "敏捷": "敏捷", "幸运": "運",
+      "已学会技能": "習得済みスキル", "可学习技能": "習得可能なスキル", "当前状态": "有効なステート", "可附加状态": "追加可能なステート",
+      "隐藏空选项": "名前のない項目を隠す",
+      "没有已学技能": "習得済みスキルはありません", "没有可学习技能": "習得できるスキルはありません", "没有当前状态": "有効なステートはありません", "没有可附加状态": "追加できるステートはありません",
+      "技能 ID": "スキル ID", "学习": "習得", "遗忘": "忘れる", "状态 ID": "ステート ID", "附加": "追加", "移除": "解除",
+      "搜索技能名称或 ID": "スキル名または ID を検索", "搜索状态名称或 ID": "ステート名または ID を検索",
+      "槽位": "スロット", "武器": "武器", "护甲": "防具", "装备 ID": "装備 ID", "装备 ID，0=卸下": "装備 ID（0 で解除）", "装备槽位": "装備スロット", "装备类型": "装備タイプ", "选择装备": "装備を選択", "当前装备": "現在の装備", "当前装备：": "装備中:", "当前槽位装备": "装備中のスロット", "可选武器": "選択できる武器", "可选护甲": "選択できる防具", "选择左侧槽位后，点击装备": "左側のスロットを選び、装備をタップ", "当前槽位没有可选装备": "このスロットに装備できるアイテムはありません", "当前角色没有此类槽位": "この種類の装備スロットはありません", "卸下装备": "装備を外す", "装备动作": "装備", "卸下动作": "解除", "没有可选装备": "選択できる装備がありません", "当前角色没有可修改的装备槽位": "変更できる装備スロットがありません", "更换": "変更",
+      "无": "なし", "开关与变量": "スイッチと変数", "开关": "スイッチ", "变量": "変数", "设为开": "オンにする", "设为关": "オフにする", "名称或 ID": "名前または ID",
+      "事件": "イベント", "地图 ID": "マップ ID", "传送": "移動", "地图操作": "マップ操作", "传送到事件": "イベントへ移動", "事件详情": "イベント詳細", "独立开关": "セルフスイッチ", "事件开关全开": "イベントスイッチをすべてオン", "事件开关全关": "イベントスイッチをすべてオフ", "事件操作": "イベント操作", "浏览": "一覧",
+      "搜索地图名称 / ID": "マップ名 / ID を検索", "搜索 ID / 名称": "ID / 名前を検索", "你在这里": "現在地",
+      "选择": "選択", "没有匹配地图": "該当するマップはありません", "当前地图没有事件（进入地图场景后打开）": "このマップにイベントはありません。マップ画面で開いてください。",
+      "在左侧选择事件查看详情": "左側のイベントを選択すると詳細を表示します", "独立开关:": "セルフスイッチ:",
+      ":开": ": オン", ":关": ": オフ", "全开": "すべてオン", "全关": "すべてオフ", "迷你地图": "ミニマップ",
+      "名称:": "名前:", "无法通行": "通行不可", "可通行": "通行可", "你": "プレイヤー", "地图边界": "マップ境界", "敌人/可移动事件": "敵 / 移動イベント", "宝箱/道具事件": "宝箱 / アイテムイベント", "传送点": "テレポート地点", "地图大小": "マップのズーム", "缩小": "縮小", "放大": "拡大", "地图格": "マップタイル", "点击地图选择格子": "マップタイルを選択", "已选格": "選択中のタイル", "点击格子选中坐标；再用下方按钮传送或查看事件；按住拖动地图可平移；点击遮罩或 × 关闭": "タイルを選択して、下のボタンから移動またはイベントを確認します。マップをドラッグして移動できます。外側または × をタップすると閉じます。", "该格没有事件": "このタイルにイベントはありません", "选择事件": "イベントを選択",
+      "点击事件块选中该事件；点外部区域或 × 关闭": "イベントをタップして選択します。外側または × をタップすると閉じます。",
+      "已选中事件 #": "選択中のイベント #", "当前不在战斗中": "戦闘中ではありません", "胜利": "勝利", "战败": "敗北", "逃跑": "逃走",
+      "队伍": "パーティ", "敌方": "敵", "数量：": "人数:", "状态：": "状態：", "正常": "正常",
+      "完全恢复": "全回復", "MP 补满": "MP最大", "TP 补满": "TP最大", "战斗清除状态": "状態解除", "HP 设为 1": "HP 1", "战斗单位恢复": "回復", "单位已恢复": "対象を回復しました", "战斗操作已执行": "戦闘操作を実行しました",
+      "消灭全部敌人": "敵をすべて倒す", "强制胜利": "強制勝利", "强制战败": "強制敗北", "强制逃跑": "強制逃走", "战斗操作": "戦闘操作", "战斗开关": "戦闘チート", "当前游戏没有可用的战斗开关": "このゲームで使える戦闘チートはありません",
+      "所选地图全部事件独立开关:": "選択したマップの全イベントセルフスイッチ:", "全部开启": "すべてオン", "全部关闭": "すべてオフ", "该事件独立开关:": "選択中イベントのセルフスイッチ:", "所选地图事件开关已全开": "選択したマップの全イベントスイッチをオンにしました", "所选地图事件开关已全关": "選択したマップの全イベントスイッチをオフにしました",
+      "事件条件开关已更新": "イベント条件スイッチを更新しました",
+      "名称:": "名前:", "描述:": "説明:", "独立开关:": "セルフスイッチ:", "事件解释器": "イベントインタプリタ", "事件解释器按钮": "インタプリタ", "事件页开关": "条件", "事件条件": "イベント条件", "条件": "条件", "点击开关或独立开关条件可单独切换": "スイッチまたはセルフスイッチ条件をタップして切り替え", "事件长度": "コマンド数", "无条件": "条件なし", "无法读取所选事件详情": "選択したイベントを読み込めません", "事件没有可显示的页面": "表示できるページがありません", "此事件页没有指令": "このイベントページにコマンドはありません", "点击指令可展开查看参数": "タップするとコマンドのパラメーターを表示します", "开": "オン", "关": "オフ", "指令数": "コマンド数", "条件数": "条件数",
+      "结束": "終了", "显示文本": "文章の表示", "显示选项": "選択肢の表示", "数值输入": "数値入力", "物品选择": "アイテム選択", "滚动文本": "スクロール文章", "注释": "注釈", "条件分支": "条件分岐", "循环": "ループ", "中断循环": "ループ中断", "事件处理结束": "イベント処理の終了", "调用公共事件": "コモンイベント", "标签": "ラベル", "跳转标签": "ラベルジャンプ", "控制开关": "スイッチの操作", "控制变量": "変数の操作", "控制独立开关": "セルフスイッチの操作", "传送玩家": "場所移動", "设置事件位置": "イベント位置設定", "设置移动路线": "移動ルートの設定", "等待": "ウェイト", "播放 BGM": "BGM の演奏", "播放 BGS": "BGS の演奏", "播放 ME": "ME の演奏", "播放 SE": "SE の演奏", "战斗处理": "戦闘の処理", "商店处理": "ショップの処理", "增减 HP": "HP の増減", "增减 MP": "MP の増減", "更改状态": "ステートの変更", "全体恢复": "全回復", "打开菜单": "メニュー画面", "打开存档画面": "セーブ画面", "游戏结束": "ゲーム終了", "脚本": "スクリプト", "文本内容": "文章", "选项分支": "選択肢分岐", "取消分支": "キャンセル分岐", "结束选项分支": "選択肢分岐終了", "结束条件分支": "条件分岐終了", "重复循环": "ループの再開", "胜利时": "勝利時", "逃跑时": "逃走時", "失败时": "敗北時", "结束战斗分支": "戦闘分岐終了", "脚本行": "スクリプト行", "事件指令": "イベントコマンド",
+      "存档管理": "セーブ管理", "读取中…": "読み込み中…", "存档 ": "セーブ ", "已有数据": "データあり", "空": "空",
+      "保存": "保存", "覆盖": "上書き", "读取": "読み込み", "删除": "削除", "Tyranor 修改器": "Tyranor 改造パネル", "版本 ": "バージョン ",
+      "加载": "ロード", "菜单": "メニュー", "调试": "デバッグ",
+      "修改器只操作当前 RGSS 游戏的运行时对象。部分深度定制脚本可能覆盖标准引擎 API；遇到异常时可在单游戏设置中关闭修改器。": "このパネルは現在の RGSS ゲームの実行中データを変更します。独自スクリプトが標準 API を上書きする場合があります。エラーが発生した場合は、そのゲームの設定で無効にしてください。",
+      "事件加速和对话快进可能跳过演出或等待，建议先保存游戏。": "イベント高速化とメッセージ早送りは演出や待機を飛ばす場合があります。先にセーブしてください。",
+      "虚拟按键": "仮想ボタン", "按键层由应用原生实现，可自定义按键的位置、文字、大小与输出键位。进入编辑后：": "仮想ボタンはアプリのネイティブ機能です。位置、ラベル、サイズ、出力キーを編集できます：",
+      "点按按键选中，拖拽调整位置": "ボタンをタップして選択し、ドラッグして移動", "右侧面板改文字 / 尺寸 / 键位": "右側のパネルでラベル / サイズ / キーを変更",
+      "可复制、删除按键，或恢复默认": "ボタンの複製・削除、初期化が可能", "保存后立即生效": "保存後すぐに反映",
+      "进入按键编辑": "ボタンを編集", "恢复默认": "初期設定に戻す", "当前未启用虚拟按键。可在应用的引擎设置中开启。": "仮想ボタンは無効です。アプリのエンジン設定で有効にできます。",
+      "设置已保存": "設定を保存しました", "金币已修改": "所持金を変更しました", "金币已拉满": "所持金を最大にしました", "队伍已恢复": "パーティを回復しました",
+      "数量已修改": "数量を変更しました", "角色已恢复": "キャラクターを回復しました", "队伍成员已更新": "パーティを更新しました", "属性已修改": "能力値を変更しました", "装备已更换": "装備を変更しました", "装备已卸下": "装備を外しました",
+      "系统值已修改": "システム値を変更しました", "独立开关 A–D 已全开": "セルフスイッチ A–D をオンにしました", "独立开关 A–D 已全关": "セルフスイッチ A–D をオフにしました",
+      "已预约传送": "移動を予約しました", "保存完成": "保存しました", "读取完成": "読み込みました", "存档已删除": "セーブを削除しました", "已恢复默认": "初期設定に戻しました",
+      "当前未启用虚拟按键": "仮想ボタンは無効です", "RGSS 修改器桥未连接": "RGSS 改造ブリッジに接続できません",
+      "当前类别": "種類", "地图列表不可用": "マップ一覧を利用できません", "已有数据": "データあり", "空": "空",
+      "全开": "すべてオン", "全关": "すべてオフ",
+      "进度": "進行状況", "PC 盒子": "PC ボックス", "上一盒": "前のボックス", "下一盒": "次のボックス", "存入当前盒子": "このボックスに預ける",
+      "从队伍选择宝可梦即可存入当前盒子": "パーティからポケモンを選ぶとここに預けられます", "已选择队伍中的宝可梦": "パーティのポケモンを選択中",
+      "存入 PC": "預ける", "宝可梦已存入 PC": "ポケモンを預けました", "取出到队伍": "パーティに引き出す", "宝可梦已取出到队伍": "ポケモンをパーティに移しました",
+      "释放": "逃がす", "宝可梦已释放": "ポケモンを逃がしました", "确定释放这只宝可梦吗？此操作无法撤销。": "このポケモンを逃がしますか？元に戻せません。",
+      "这个盒子是空的": "このボックスは空です", "无法读取 PC 盒子": "PC ボックスを読み取れません", "徽章与图鉴": "バッジと図鑑",
+      "徽章": "バッジ", "获得全部徽章": "すべてのバッジを入手", "移除全部徽章": "すべてのバッジを削除", "徽章已更新": "バッジを更新しました",
+      "拥有图鉴": "図鑑を所持", "地区图鉴": "地方図鑑", "当前游戏没有公开徽章或图鉴接口": "このゲームはバッジまたは図鑑の操作に対応していません",
+      "进度已更新": "進行状況を更新しました", "修改昵称": "ニックネームを変更", "昵称已修改": "ニックネームを変更しました", "留空或输入原物种名称可清除昵称": "空欄または種族名を入力するとニックネームを解除します",
+      "剩余孵化步数": "孵化までの歩数", "快速孵化": "すぐに孵化", "蛋只能调整孵化进度": "タマゴは孵化までの歩数のみ変更できます",
+      "蛋只需再走一步即可孵化": "あと 1 歩で孵化します"
+    }
+  };
+
+  var dictionary = dictionaries[language] || {};
+  function translate(value) {
+    var text = String(value == null ? "" : value);
+    if (dictionary[text]) return dictionary[text];
+    var eventPage = text.match(/^事件页\s*(\d+)$/);
+    if (eventPage) return language === "ja" ? "ページ " + eventPage[1] : "Page " + eventPage[1];
+    var eventCounts = text.match(/^指令数\s*(\d+)\s*·\s*条件数\s*(\d+)$/);
+    if (eventCounts) return language === "ja"
+      ? "コマンド " + eventCounts[1] + " · 条件 " + eventCounts[2]
+      : "Cmd " + eventCounts[1] + " · Cond " + eventCounts[2];
+    var dynamic = text.match(/^(槽位\s*\d+：|存档\s+|迷你地图 #|已选中事件 #)/);
+    if (dynamic) {
+      var prefix = dynamic[0];
+      var translatedPrefix = prefix.indexOf("槽位") === 0
+        ? (language === "ja" ? "スロット" : "Slot ") + prefix.match(/\d+/)[0] + (language === "ja" ? "：" : ": ")
+        : prefix.indexOf("存档") === 0 ? (language === "ja" ? "セーブ " : "Save ")
+        : prefix.indexOf("迷你地图") === 0 ? (language === "ja" ? "ミニマップ #" : "Minimap #")
+        : (language === "ja" ? "選択中のイベント #" : "Selected event #");
+      var suffix = text.substring(prefix.length);
+      if (prefix.indexOf("存档") === 0) {
+        suffix = suffix.replace(/ · 已有数据$/, " · " + translate("已有数据"));
+        suffix = suffix.replace(/ · 空$/, " · " + translate("空"));
+      }
+      return translatedPrefix + suffix;
+    }
+    var switchState = text.match(/^([A-D]):(开|关)$/);
+    if (switchState) return switchState[1] + ":" + translate(switchState[2]);
+    var noclipState = text.match(/^穿墙:(开|关)$/);
+    if (noclipState) return translate("穿墙") + ":" + translate(noclipState[1]);
+    return text;
+  }
+  function localizeNode(node) {
+    if (!node) return;
+    if (node.nodeType === 3) {
+      var parent = node.parentElement;
+      if (parent && (parent.closest(".tm-name") || parent.closest("#tm-actor"))) return;
+      var raw = node.nodeValue;
+      var trimmed = raw.trim();
+      if (!trimmed) return;
+      var localized = translate(trimmed);
+      if (localized === trimmed && /^版本\s+/.test(trimmed)) localized = translate("版本 ") + trimmed.substring(trimmed.indexOf(" ") + 1);
+      if (localized !== trimmed) node.nodeValue = raw.replace(trimmed, localized);
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    ["placeholder", "aria-label", "title"].forEach(function (name) {
+      if (!node.hasAttribute(name)) return;
+      var value = node.getAttribute(name);
+      var localized = translate(value);
+      if (localized !== value) node.setAttribute(name, localized);
+    });
+    Array.prototype.slice.call(node.childNodes).forEach(localizeNode);
+  }
+
+  if (languageTag) document.documentElement.lang = languageTag;
+  if (language !== "zh" && typeof MutationObserver !== "undefined") {
+    localizeNode(document.documentElement);
+    new MutationObserver(function (records) {
+      records.forEach(function (record) {
+        if (record.type === "characterData") localizeNode(record.target);
+        else if (record.type === "childList") Array.prototype.forEach.call(record.addedNodes, localizeNode);
+        else if (record.type === "attributes") localizeNode(record.target);
+      });
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["placeholder", "aria-label", "title"],
+      characterData: true,
+      childList: true,
+      subtree: true
+    });
+  }
+  window.TyranorCheatTranslate = translate;
+})();

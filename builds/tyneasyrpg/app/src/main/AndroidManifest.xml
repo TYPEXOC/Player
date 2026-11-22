@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <!-- Games are launched through an absolute folder path, so the module
+         needs its own storage access; TYN's permissions are not transferable. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- OpenGL ES 2.0 -->
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <uses-feature android:name="android.hardware.type.pc" android:required="false" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:label="@string/tyn_module_name"
+        android:icon="@drawable/ic_launcher"
+        android:theme="@style/AppTheme"
+        android:appCategory="game"
+        android:isGame="true"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:extractNativeLibs="true"
+        android:allowBackup="true"
+        android:requestLegacyExternalStorage="true"
+        android:enableOnBackInvokedCallback="true">
+
+        <!-- Setting SDL hints from AndroidManifest.xml: -->
+        <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0" />
+        <meta-data android:name="SDL_ENV.SDL_APP_NAME" android:value="TYN EasyRPG" />
+        <meta-data android:name="SDL_ENV.SDL_ANDROID_ALLOW_RECREATE_ACTIVITY" android:value="1" />
+
+        <!-- TYN runtime module entry point. Games are only started by TYN;
+             the launcher icon opens the module info page instead. -->
+        <activity
+            android:name="com.tyranor.runtime.easyrpg.MainActivity"
+            android:label="@string/tyn_module_name"
+            android:alwaysRetainTaskState="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|density|uiMode"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="com.tyranor.runtime.action.LAUNCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.tyranor.runtime.MANIFEST"
+                android:resource="@raw/tyranor_runtime" />
+        </activity>
+
+        <!-- Module info page: the only launcher entry of this APK. -->
+        <activity
+            android:name="com.tyranor.runtime.easyrpg.ModuleInfoActivity"
+            android:label="@string/tyn_module_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Player's Activity -->
+        <activity
+            android:name="org.easyrpg.player.player.EasyRpgPlayerActivity"
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/AppThemePlayerActivity" />
+
+        <!-- Settings' Activities (reachable from the in-game drawer) -->
+        <activity android:name="org.easyrpg.player.settings.SettingsMainActivity"
+            android:label="@string/settings" />
+        <activity android:name="org.easyrpg.player.settings.SettingsVideoActivity"
+            android:label="@string/video" />
+        <activity android:name="org.easyrpg.player.settings.SettingsAudioActivity"
+            android:label="@string/audio" />
+        <activity android:name="org.easyrpg.player.settings.SettingsGamesFolderActivity"
+            android:label="@string/easyrpg_folders" />
+        <activity android:name="org.easyrpg.player.settings.SettingsInputActivity"
+            android:label="@string/input" />
+        <activity android:name="org.easyrpg.player.settings.SettingsFontActivity"
+            android:label="@string/font" />
+        <activity android:name="org.easyrpg.player.button_mapping.ButtonMappingActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|screenSize" />
+
+        <!-- FileProvider used by the in-game bug report mail. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- FileProvider used by the diagnostics log export. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.diagnostics"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/diagnostics_paths" />
+        </provider>
+    </application>
+</manifest>

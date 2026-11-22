@@ -1,0 +1,85 @@
+name: Tyneasyrpg module build
+
+on:
+  push:
+    branches: [tyn-module]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  apk:
+    name: Android APK (arm64-v8a debug)
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    env:
+      # buildscripts only compiles liblcf when this is set
+      BUILD_LIBLCF: 1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yqq --no-install-recommends \
+            ninja-build meson autoconf automake libtool pkg-config nasm
+
+      - name: Get EasyRPG buildscripts
+        run: |
+          git clone --depth 1 https://github.com/EasyRPG/buildscripts.git "$GITHUB_WORKSPACE/../buildscripts"
+          cd "$GITHUB_WORKSPACE/../buildscripts/android"
+          echo "TOOLCHAIN_ROOT=$(pwd)" >> "$GITHUB_ENV"
+
+      - name: Download libraries and Android SDK/NDK
+        working-directory: ${{ env.TOOLCHAIN_ROOT }}
+        run: |
+          bash ./1_download_library.sh
+          chmod -R u+x "$PWD/android-sdk/cmdline-tools" || true
+
+      - name: Build arm64-v8a dependency toolchain
+        working-directory: ${{ env.TOOLCHAIN_ROOT }}
+        run: |
+          # The module packages arm64-v8a only; keep the toolchain build to a
+          # quarter of the time by skipping the other three ABIs.
+          sed -i 's/^build "ARMeabi-v7a"/#&/; s/^build "x86"/#&/; s/^build "x86_64"/#&/' 2_build_toolchain.sh
+          bash -x ./2_build_toolchain.sh
+
+      - name: Build module APK
+        run: |
+          cd builds/tyneasyrpg
+          bash gradlew assembleDebug \
+            -PtoolchainDirs="${{ env.TOOLCHAIN_ROOT }}" 2>&1 | tee gradle-build.log
+          rc=${PIPESTATUS[0]}
+          if [ $rc -ne 0 ]; then
+            # Surface the actual build errors as annotations (publicly visible).
+            grep -aE "error:|FAILURE:|CMake Error|e: |Exception" gradle-build.log | head -30 | while IFS= read -r l; do
+              echo "::error::${l:0:400}"
+            done
+            exit $rc
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tyneasyrpg-debug
+          path: builds/tyneasyrpg/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
