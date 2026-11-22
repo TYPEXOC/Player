@@ -14,15 +14,15 @@
  * controller and WebView panel work across engines.
  */
 
-#ifndef EP_TYN_CHEAT_H
-#define EP_TYN_CHEAT_H
+#ifndef EP_TYNEASYRPG_CHEAT_H
+#define EP_TYNEASYRPG_CHEAT_H
 
 #include <map>
 #include <string>
 
-class TynCheatBroker {
+class TyneasyrpgCheatBroker {
 public:
-	static TynCheatBroker& Instance();
+	static TyneasyrpgCheatBroker& Instance();
 
 	/** Cache directory of the TYN module (from --tyn-cheat-dir). */
 	void SetDir(std::string dir);
@@ -31,7 +31,7 @@ public:
 	void Poll();
 
 private:
-	TynCheatBroker() = default;
+	TyneasyrpgCheatBroker() = default;
 
 	void HandleCommand(const std::string& cmd, const std::string& a, const std::string& b, std::string& reply);
 	std::string ListCapabilities();

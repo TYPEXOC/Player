@@ -6,7 +6,7 @@
  * published by the Free Software Foundation.
  */
 
-#include "tyn_cheat.h"
+#include "tyneasyrpg_cheat.h"
 
 #include "game_party.h"
 #include "game_switches.h"
@@ -39,19 +39,8 @@ std::string TrimCopy(const std::string& text) {
 	size_t end = text.find_last_not_of(" \t\r\n");
 	return text.substr(begin, end - begin + 1);
 }
-}
 
-TynCheatBroker& TynCheatBroker::Instance() {
-	static TynCheatBroker broker;
-	return broker;
-}
-
-void TynCheatBroker::SetDir(std::string dir) {
-	dir_ = std::move(dir);
-	Output::Debug("TYN cheat layer active in '{}'", dir_);
-}
-
-std::string TynCheatBroker::WireText(const std::string& text) {
+std::string WireText(const std::string& text) {
 	std::string out;
 	out.reserve(text.size());
 	for (char c : text) {
@@ -59,8 +48,19 @@ std::string TynCheatBroker::WireText(const std::string& text) {
 	}
 	return out;
 }
+}
 
-void TynCheatBroker::ApplyContinuous() {
+TyneasyrpgCheatBroker& TyneasyrpgCheatBroker::Instance() {
+	static TyneasyrpgCheatBroker broker;
+	return broker;
+}
+
+void TyneasyrpgCheatBroker::SetDir(std::string dir) {
+	dir_ = std::move(dir);
+	Output::Debug("Tyneasyrpg cheat layer active in '{}'", dir_);
+}
+
+void TyneasyrpgCheatBroker::ApplyContinuous() {
 	if (Main_Data::game_party && unlimited_gold_) {
 		int gold = Main_Data::game_party->GetGold();
 		if (gold < GOLD_MAX) {
@@ -79,7 +79,7 @@ void TynCheatBroker::ApplyContinuous() {
 	}
 }
 
-void TynCheatBroker::Poll() {
+void TyneasyrpgCheatBroker::Poll() {
 	if (dir_.empty()) {
 		return;
 	}
@@ -138,7 +138,7 @@ void TynCheatBroker::Poll() {
 	{
 		std::ofstream out(tmp_path, std::ios::binary | std::ios::trunc);
 		if (!out) {
-			Output::Warning("TYN cheat layer: cannot write reply file");
+			Output::Warning("Tyneasyrpg cheat layer: cannot write reply file");
 			return;
 		}
 		out << id << "\t" << reply;
@@ -151,7 +151,7 @@ void TynCheatBroker::Poll() {
 	}
 }
 
-void TynCheatBroker::WriteState() {
+void TyneasyrpgCheatBroker::WriteState() {
 	if (dir_.empty()) {
 		return;
 	}
@@ -172,7 +172,7 @@ void TynCheatBroker::WriteState() {
 	}
 }
 
-std::string TynCheatBroker::ListCapabilities() {
+std::string TyneasyrpgCheatBroker::ListCapabilities() {
 	// Line protocol: E=engine, T=toggle, V=value, F=scene feature.
 	std::string out = "E\teasyrpg";
 	out += "\nT\tgold";
@@ -180,19 +180,25 @@ std::string TynCheatBroker::ListCapabilities() {
 	return out;
 }
 
-std::string TynCheatBroker::ListSystem() {
+std::string TyneasyrpgCheatBroker::ListSystem() {
 	if (!Main_Data::game_switches || !Main_Data::game_variables) {
 		return NOT_READY;
 	}
-	const auto& switches = lcf::Data::system.switches;
-	const auto& variables = lcf::Data::system.variables;
+	// Switch/variable names live in the LDB database (lcf::Data), not in
+	// rpg::System; entries carry their own 1-based ID.
+	const auto& switches = lcf::Data::switches;
+	const auto& variables = lcf::Data::variables;
 	if (switches.empty() && variables.empty()) {
 		return "The game's switch and variable tables are unavailable.";
 	}
 
 	std::vector<std::string> lines;
-	for (int id = 1; id < static_cast<int>(switches.size()); ++id) {
-		std::string raw(switches[id].c_str());
+	for (const auto& sw : switches) {
+		int id = sw.ID;
+		if (id <= 0) {
+			continue;
+		}
+		std::string raw(static_cast<std::string>(sw.name));
 		bool named = !TrimCopy(raw).empty();
 		std::string name = named ? raw : ("Switch " + std::to_string(id));
 		bool value = Main_Data::game_switches->Get(id);
@@ -200,8 +206,12 @@ std::string TynCheatBroker::ListSystem() {
 		lines.push_back("S\t" + std::to_string(id) + "\t" + (value ? "1" : "0") + "\t"
 			+ WireText(name) + "\t" + (locked ? "1" : "0") + "\t" + (named ? "1" : "0"));
 	}
-	for (int id = 1; id < static_cast<int>(variables.size()); ++id) {
-		std::string raw(variables[id].c_str());
+	for (const auto& var : variables) {
+		int id = var.ID;
+		if (id <= 0) {
+			continue;
+		}
+		std::string raw(static_cast<std::string>(var.name));
 		bool named = !TrimCopy(raw).empty();
 		std::string name = named ? raw : ("Variable " + std::to_string(id));
 		int32_t value = Main_Data::game_variables->Get(id);
@@ -218,7 +228,7 @@ std::string TynCheatBroker::ListSystem() {
 	return out;
 }
 
-void TynCheatBroker::HandleCommand(const std::string& cmd, const std::string& a, const std::string& b, std::string& reply) {
+void TyneasyrpgCheatBroker::HandleCommand(const std::string& cmd, const std::string& a, const std::string& b, std::string& reply) {
 	if (cmd == "restore") {
 		unlimited_gold_ = false;
 		switch_locks_.clear();

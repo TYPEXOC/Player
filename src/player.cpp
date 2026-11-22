@@ -78,7 +78,7 @@
 #include "scene_title.h"
 #include "instrumentation.h"
 #include "transition.h"
-#include "tyn_cheat.h"
+#include "tyneasyrpg_cheat.h"
 #include <lcf/scope_guard.h>
 #include <lcf/log_handler.h>
 #include "baseui.h"
@@ -259,7 +259,7 @@ void Player::MainLoop() {
 		}
 
 		translation.ProcessPendingReload();
-		TynCheatBroker::Instance().Poll();
+		TyneasyrpgCheatBroker::Instance().Poll();
 
 		Scene::old_instances.clear();
 		Scene::instance->MainFunction();
@@ -599,9 +599,9 @@ Game_Config Player::ParseCommandLine() {
 			}
 			continue;
 		}
-		if (cp.ParseNext(arg, 1, "--tyn-cheat-dir")) {
+		if (cp.ParseNext(arg, 1, "--tyneasyrpg-cheat-dir")) {
 			if (arg.NumValues() > 0) {
-				TynCheatBroker::Instance().SetDir(arg.Value(0));
+				TyneasyrpgCheatBroker::Instance().SetDir(arg.Value(0));
 			}
 			continue;
 		}
@@ -1554,7 +1554,7 @@ Engine options:
                       store them in PATH. When using the game browser all games
                       will share the same save directory!
  --seed N             Seeds the random number generator with N.
- --tyn-cheat-dir DIR  Enable the TYN cheat layer; the file-based command
+ --tyneasyrpg-cheat-dir DIR  Enable the Tyneasyrpg cheat layer; the file-based command
                       channel lives inside DIR (used by the TYN runtime
                       module).
 
