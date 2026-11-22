@@ -138,6 +138,19 @@ bool Dictionary::TranslateString(std::string_view context, StringType& original)
 			return true;
 		}
 	}
+	// Flat catalogs without msgctxt (e.g. MTool JSON maps) store everything in
+	// the empty context. Fall back to it when the requested context has no hit,
+	// so such dictionaries translate every lookup keyed by the original text.
+	if (!context.empty()) {
+		auto it_flat = entries.find(std::string());
+		if (it_flat != entries.end()) {
+			auto it2_flat = it_flat->second.find(key.str());
+			if (it2_flat != it_flat->second.end()) {
+				original = StringType(it2_flat->second);
+				return true;
+			}
+		}
+	}
 	return false;
 }
 
