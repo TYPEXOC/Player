@@ -19,6 +19,10 @@ public final class ModulePrefs {
     private static final String KEY_PAD_ENABLED = "padEnabled";
     private static final String KEY_CHEATS_ENABLED = "cheatsEnabled";
     private static final String KEY_ENCODING = "encoding";
+    private static final String KEY_RTP_DIRECTORY = "rtpDirectory";
+    private static final String KEY_SAVE_DIRECTORY = "saveDirectory";
+    private static final String KEY_TEST_PLAY = "testPlay";
+    private static final String KEY_NO_AUDIO = "noAudio";
 
     private ModulePrefs() {}
 
@@ -40,6 +44,18 @@ public final class ModulePrefs {
             if (values.has(KEY_ENCODING)) {
                 editor.putString(KEY_ENCODING, values.optString(KEY_ENCODING, ""));
             }
+            if (values.has(KEY_RTP_DIRECTORY)) {
+                editor.putString(KEY_RTP_DIRECTORY, values.optString(KEY_RTP_DIRECTORY, ""));
+            }
+            if (values.has(KEY_SAVE_DIRECTORY)) {
+                editor.putString(KEY_SAVE_DIRECTORY, values.optString(KEY_SAVE_DIRECTORY, ""));
+            }
+            if (values.has(KEY_TEST_PLAY)) {
+                editor.putBoolean(KEY_TEST_PLAY, values.optBoolean(KEY_TEST_PLAY, false));
+            }
+            if (values.has(KEY_NO_AUDIO)) {
+                editor.putBoolean(KEY_NO_AUDIO, values.optBoolean(KEY_NO_AUDIO, false));
+            }
             editor.apply();
         } catch (Exception error) {
             Log.w(TAG, "Ignoring malformed SETTINGS payload", error);
@@ -56,6 +72,22 @@ public final class ModulePrefs {
 
     public static String getEncoding(Context context) {
         return prefs(context).getString(KEY_ENCODING, "");
+    }
+
+    public static String getRtpDirectory(Context context) {
+        return prefs(context).getString(KEY_RTP_DIRECTORY, "").trim();
+    }
+
+    public static String getSaveDirectory(Context context) {
+        return prefs(context).getString(KEY_SAVE_DIRECTORY, "").trim();
+    }
+
+    public static boolean isTestPlayEnabled(Context context) {
+        return prefs(context).getBoolean(KEY_TEST_PLAY, false);
+    }
+
+    public static boolean isAudioDisabled(Context context) {
+        return prefs(context).getBoolean(KEY_NO_AUDIO, false);
     }
 
     private static SharedPreferences prefs(Context context) {

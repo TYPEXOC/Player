@@ -105,10 +105,27 @@ public class MainActivity extends Activity {
             args.add("--encoding");
             args.add(encoding.trim());
         }
+        String rtpDirectory = ModulePrefs.getRtpDirectory(this);
+        if (!rtpDirectory.isEmpty()) {
+            args.add("--rtp-path");
+            args.add(rtpDirectory);
+        }
+        String saveDirectory = ModulePrefs.getSaveDirectory(this);
+        if (!saveDirectory.isEmpty()) {
+            args.add("--save-path");
+            args.add(saveDirectory);
+        }
+        if (ModulePrefs.isTestPlayEnabled(this)) {
+            args.add("--test-play");
+        }
+        if (ModulePrefs.isAudioDisabled(this)) {
+            args.add("--no-audio");
+        }
 
         Intent engine = new Intent(this, EasyRpgPlayerActivity.class);
         engine.putExtra(EasyRpgPlayerActivity.TAG_COMMAND_LINE, args.toArray(new String[0]));
-        engine.putExtra(EasyRpgPlayerActivity.TAG_SAVE_PATH, gameDir.getAbsolutePath());
+        engine.putExtra(EasyRpgPlayerActivity.TAG_SAVE_PATH,
+            saveDirectory.isEmpty() ? gameDir.getAbsolutePath() : saveDirectory);
         startActivity(engine);
         TynRuntimeDiagnostics.append(TynSession.current(),
             "Engine activity started with " + args.size() + " argument(s), translation records=" + translationCount);

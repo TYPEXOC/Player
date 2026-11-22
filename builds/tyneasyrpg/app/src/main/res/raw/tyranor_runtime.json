@@ -13,7 +13,11 @@
     "items": [
       { "key": "padEnabled", "type": "boolean", "title": "显示虚拟按键", "default": true },
       { "key": "cheatsEnabled", "type": "boolean", "title": "启用作弊菜单", "default": true },
-      { "key": "encoding", "type": "text", "title": "文本编码", "description": "留空自动检测；例如 932(Shift-JIS)、936(GBK)、65001(UTF-8)", "default": "", "maxLength": 16 }
+      { "key": "encoding", "type": "text", "title": "文本编码", "description": "留空自动检测；例如 932(Shift-JIS)、936(GBK)、65001(UTF-8)", "default": "", "maxLength": 16 },
+      { "key": "rtpDirectory", "type": "text", "title": "RTP 目录路径", "description": "游戏未内置素材时需要的 RTP 根目录绝对路径，例如 /sdcard/RPG_RT/2000", "default": "", "maxLength": 1024 },
+      { "key": "saveDirectory", "type": "text", "title": "存档目录路径", "description": "留空存档保存在游戏目录内；填写绝对路径则所有游戏共用该存档目录", "default": "", "maxLength": 1024 },
+      { "key": "testPlay", "type": "boolean", "title": "F9 调试菜单", "description": "游戏中按 F9 打开引擎自带的调试菜单（穿墙/传送/数值等）", "default": false },
+      { "key": "noAudio", "type": "boolean", "title": "禁用音频", "default": false }
     ]
   }
 }
