@@ -396,6 +396,8 @@ add_library(${PROJECT_NAME} OBJECT
 	src/transition.h
 	src/translation.cpp
 	src/translation.h
+	src/tyn_cheat.cpp
+	src/tyn_cheat.h
 	src/util_macro.h
 	src/utils.cpp
 	src/utils.h
