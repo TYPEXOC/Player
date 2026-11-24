@@ -8,8 +8,7 @@
 
 - 独立 APK 模块，包名 `com.tyranor.runtime.easyrpg`，按
   [TYN 第三方 APK 运行时模块接入指南](https://github.com/Weiss-UltimateSavior/Tyranor-Next/blob/main/docs/%E7%AC%AC%E4%B8%89%E6%96%B9APK%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A8%A1%E5%9D%97%E6%8E%A5%E5%85%A5%E6%8C%87%E5%8D%97.md) 接入。
-- **不能独立启动游戏**：launcher 图标只打开模块信息页；游戏由 TYN 扫描入库后交棒启动。
-- 模块信息页提供存储权限申请与运行日志导出（按会话归档）。
+- launcher 图标直接进入 EasyRPG 上游游戏浏览器，游戏目录可从上游设置中选择；TYN 扫描入库的游戏通过运行时协议交棒启动。
 - 游戏画面、侧边栏、设置页和虚拟按键沿用 EasyRPG Android 上游实现；TYN 通过模块启动、翻译接入和侧栏中的作弊面板入口扩展运行时。
 
 ## 能力
@@ -23,7 +22,7 @@
 | 虚拟按键 | ✅（EasyRPG Player 自带，可经引擎设置关闭；`padEnabled` 声明生效） |
 | 单游戏设置（`padEnabled` / `cheatsEnabled` / `encoding`） | ✅ |
 | 作弊面板 | ✅（通过 EasyRPG Player 侧边栏打开） |
-| 日志导出 | ✅（复用 TYN RGSS 模块的诊断框架） |
+| 会话诊断日志 | ✅（供 TYN 运行时诊断使用） |
 
 ## 翻译接入原理
 

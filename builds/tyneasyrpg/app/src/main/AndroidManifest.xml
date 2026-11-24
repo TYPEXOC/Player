@@ -23,7 +23,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
-        android:label="@string/tyn_module_name"
+        android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:appCategory="game"
@@ -36,14 +36,13 @@
 
         <!-- Setting SDL hints from AndroidManifest.xml: -->
         <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0" />
-        <meta-data android:name="SDL_ENV.SDL_APP_NAME" android:value="TYN EasyRPG" />
+        <meta-data android:name="SDL_ENV.SDL_APP_NAME" android:value="EasyRPG Player" />
         <meta-data android:name="SDL_ENV.SDL_ANDROID_ALLOW_RECREATE_ACTIVITY" android:value="1" />
 
-        <!-- TYN runtime module entry point. Games are only started by TYN;
-             the launcher icon opens the module info page instead. -->
+        <!-- TYN runtime hand-off entry point. -->
         <activity
             android:name="com.tyranor.runtime.easyrpg.MainActivity"
-            android:label="@string/tyn_module_name"
+            android:label="@string/app_name"
             android:alwaysRetainTaskState="true"
             android:launchMode="singleTask"
             android:screenOrientation="sensorLandscape"
@@ -60,10 +59,25 @@
                 android:resource="@raw/tyranor_runtime" />
         </activity>
 
-        <!-- Module info page: the only launcher entry of this APK. -->
+        <!-- Upstream initialization Activity, including USB launch support. -->
         <activity
-            android:name="com.tyranor.runtime.easyrpg.ModuleInfoActivity"
-            android:label="@string/tyn_module_name"
+            android:name="org.easyrpg.player.InitActivity"
+            android:alwaysRetainTaskState="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/AppTheme"
+            android:exported="true"
+            android:preferMinimalPostProcessing="true"
+            tools:targetApi="r">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+        </activity>
+
+        <!-- Open the upstream browser directly, matching EasyRPG's main UI. -->
+        <activity
+            android:name="org.easyrpg.player.game_browser.GameBrowserActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/AppTheme.NoActionBar"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -79,17 +93,23 @@
 
         <!-- Settings' Activities (reachable from the in-game drawer) -->
         <activity android:name="org.easyrpg.player.settings.SettingsMainActivity"
-            android:label="@string/settings" />
+            android:label="@string/settings"
+            android:parentActivityName="org.easyrpg.player.game_browser.GameBrowserActivity" />
         <activity android:name="org.easyrpg.player.settings.SettingsVideoActivity"
-            android:label="@string/video" />
+            android:label="@string/video"
+            android:parentActivityName="org.easyrpg.player.settings.SettingsMainActivity" />
         <activity android:name="org.easyrpg.player.settings.SettingsAudioActivity"
-            android:label="@string/audio" />
+            android:label="@string/audio"
+            android:parentActivityName="org.easyrpg.player.settings.SettingsMainActivity" />
         <activity android:name="org.easyrpg.player.settings.SettingsGamesFolderActivity"
-            android:label="@string/easyrpg_folders" />
+            android:label="@string/easyrpg_folders"
+            android:parentActivityName="org.easyrpg.player.settings.SettingsMainActivity" />
         <activity android:name="org.easyrpg.player.settings.SettingsInputActivity"
-            android:label="@string/input" />
+            android:label="@string/input"
+            android:parentActivityName="org.easyrpg.player.settings.SettingsMainActivity" />
         <activity android:name="org.easyrpg.player.settings.SettingsFontActivity"
-            android:label="@string/font" />
+            android:label="@string/font"
+            android:parentActivityName="org.easyrpg.player.settings.SettingsMainActivity" />
         <activity android:name="org.easyrpg.player.button_mapping.ButtonMappingActivity"
             android:theme="@style/AppTheme.NoActionBar"
             android:configChanges="orientation|screenSize" />

@@ -1,22 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tyn_module_name">TYN EasyRPG</string>
     <string name="tyn_cheat_panel">作弊面板</string>
-    <string name="tyn_info_subtitle">TYN 外置引擎模块 · RPG Maker 2000/2003 运行时</string>
-    <string name="tyn_info_hint">本模块不能独立启动游戏，请在 TYN 主应用中扫描并启动游戏。</string>
-    <string name="tyn_info_package">模块包名</string>
-    <string name="tyn_info_version">模块版本</string>
-    <string name="tyn_info_storage">存储权限</string>
-    <string name="tyn_info_storage_granted">已授权</string>
-    <string name="tyn_info_storage_denied">未授权（启动游戏需要）</string>
-    <string name="tyn_info_grant_storage">申请存储权限</string>
-    <string name="tyn_info_export_logs">导出运行日志</string>
-    <string name="tyn_info_exporting">正在导出运行日志…</string>
-    <string name="tyn_info_export_failed">日志导出失败</string>
-    <string name="tyn_info_no_logs">暂无可导出的会话日志</string>
-    <string name="tyn_info_share_title">TYN EasyRPG 运行日志</string>
     <string name="tyn_launch_missing_folder">启动参数缺少游戏目录</string>
     <string name="tyn_launch_folder_invalid">游戏目录不存在或不可读</string>
-    <string name="tyn_launch_no_storage">缺少存储权限，请在模块信息页申请后重试</string>
+    <string name="tyn_launch_no_storage">缺少游戏文件访问权限，授权后请回到 TYN 重试</string>
     <string name="tyn_launch_failed">游戏启动失败</string>
 </resources>

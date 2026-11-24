@@ -1,6 +1,7 @@
 package com.tyranor.runtime.easyrpg;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -11,6 +12,7 @@ import android.provider.Settings;
 import android.widget.Toast;
 
 import com.tyranor.runtime.diagnostics.TynRuntimeDiagnostics;
+import org.easyrpg.player.game_browser.GameBrowserActivity;
 import org.easyrpg.player.R;
 
 import org.easyrpg.player.player.EasyRpgPlayerActivity;
@@ -24,9 +26,8 @@ import java.util.Locale;
 
 /**
  * TYN runtime module entry: receives the launch hand-off, prepares the
- * translation catalog and starts the EasyRPG engine activity. The module
- * itself never launches games on its own; the launcher icon opens the
- * module info page instead.
+ * translation catalog and starts the EasyRPG engine activity. The launcher
+ * follows EasyRPG's upstream startup flow.
  */
 public class MainActivity extends Activity {
     private static final String TAG = "TYN-EasyRPG";
@@ -37,6 +38,8 @@ public class MainActivity extends Activity {
     private static final String EXTRA_PROTOCOL_VERSION = "com.tyranor.runtime.extra.PROTOCOL_VERSION";
     private static final String EXTRA_SETTINGS = "com.tyranor.runtime.extra.SETTINGS";
     private static final String EXTRA_TRANSLATION_MAP_URI = "com.tyranor.runtime.extra.TRANSLATION_MAP_URI";
+    private static final int REQUEST_MANAGE_STORAGE = 4101;
+    private static final int REQUEST_READ_STORAGE = 4102;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,8 +47,8 @@ public class MainActivity extends Activity {
 
         Intent intent = getIntent();
         if (!RUNTIME_MODULE_ACTION_LAUNCH.equals(intent.getAction())) {
-            // Opened directly (launcher tap): show the module info page.
-            startActivity(new Intent(this, ModuleInfoActivity.class));
+            // Fall through to EasyRPG's upstream game browser.
+            startActivity(new Intent(this, GameBrowserActivity.class));
             finish();
             return;
         }
@@ -64,9 +67,7 @@ public class MainActivity extends Activity {
             return;
         }
         if (!hasStorageAccess()) {
-            Toast.makeText(this, R.string.tyn_launch_no_storage, Toast.LENGTH_LONG).show();
-            startActivity(new Intent(this, ModuleInfoActivity.class));
-            finish();
+            requestStorageAccess();
             return;
         }
 
@@ -132,6 +133,50 @@ public class MainActivity extends Activity {
         }
         return checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
             == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestStorageAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent settingsIntent = new Intent(
+                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.parse("package:" + getPackageName()));
+            try {
+                startActivityForResult(settingsIntent, REQUEST_MANAGE_STORAGE);
+            } catch (ActivityNotFoundException error) {
+                startActivityForResult(
+                    new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                    REQUEST_MANAGE_STORAGE);
+            }
+        } else {
+            requestPermissions(
+                new String[] { android.Manifest.permission.READ_EXTERNAL_STORAGE },
+                REQUEST_READ_STORAGE);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_MANAGE_STORAGE) {
+            continueAfterStorageRequest();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_READ_STORAGE) {
+            continueAfterStorageRequest();
+        }
+    }
+
+    private void continueAfterStorageRequest() {
+        if (hasStorageAccess()) {
+            recreate();
+        } else {
+            Toast.makeText(this, R.string.tyn_launch_no_storage, Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     private void beginDiagnostics(File gameDir, String gameTitle, boolean translationSelected,
