@@ -51,6 +51,7 @@ public class GameBrowserActivity extends BaseActivity
     private int nbOfGamesPerLine;
     private boolean isScanProcessing;
     private static List<Game> displayedGamesList;
+    private GameBrowserHelper.SafError safError = GameBrowserHelper.SafError.OK;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +81,31 @@ public class GameBrowserActivity extends BaseActivity
     public void onResume() {
         super.onResume();
 
+        if (safError != GameBrowserHelper.SafError.OK
+            && safError != GameBrowserHelper.SafError.ABORTED) {
+            GameBrowserHelper.showErrorMessage(this, safError);
+            safError = GameBrowserHelper.SafError.OK;
+            return;
+        }
+
         scanGamesAndDisplayResult(false);
         GameBrowserHelper.displayHowToMessageOnFirstStartup(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        super.onActivityResult(requestCode, resultCode, resultData);
+
+        safError = GameBrowserHelper.dealAfterFolderSelected(this, requestCode, resultCode, resultData);
+        if (safError != GameBrowserHelper.SafError.OK
+            && safError != GameBrowserHelper.SafError.ABORTED) {
+            return;
+        }
+
+        // Recreate the browser so the new Activity receives the folder's SAF grant.
+        resetGamesList();
+        startActivity(new Intent(this, GameBrowserActivity.class));
+        finish();
     }
 
     /**
@@ -223,11 +247,8 @@ public class GameBrowserActivity extends BaseActivity
                         TextView errorLayout = findViewById(R.id.error_text);
                         errorLayout.setText(errorString.toString());
 
-                        // Video button
-                        findViewById(R.id.watch_video).setOnClickListener(v -> {
-                            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(GameBrowserHelper.VIDEO_URL));
-                            startActivity(browserIntent);
-                        });
+                        findViewById(R.id.select_games_folder).setOnClickListener(
+                            v -> GameBrowserHelper.pickAGamesFolder(this));
                     }
 
                     isScanProcessing = false;
