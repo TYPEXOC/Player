@@ -27,6 +27,7 @@
 #include "player.h"
 #include "baseui.h"
 #include "scene_settings.h"
+#include "tyneasyrpg_cheat.h"
 
 #ifdef __cplusplus
 extern "C" {
