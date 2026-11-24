@@ -474,7 +474,6 @@ public class EasyRpgPlayerActivity extends SDLActivity implements NavigationView
 
     public static native void toggleFps();
 
-    /** Pushed by the TYN translation session after the catalog is rewritten. */
     /** Raw in-memory PO catalog pushed by the TYN translation session. */
     public static native void setTranslationCatalog(byte[] data);
 
@@ -585,4 +584,5 @@ public class EasyRpgPlayerActivity extends SDLActivity implements NavigationView
         }
         super.onDestroy();
     }
+
 }

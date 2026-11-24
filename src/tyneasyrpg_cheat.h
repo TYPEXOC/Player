@@ -38,6 +38,7 @@ private:
 	TyneasyrpgCheatBroker() = default;
 
 	void HandleCommand(const std::string& cmd, const std::string& a, const std::string& b, std::string& reply);
+	void ProcessTranslation();
 	std::string ListCapabilities();
 	std::string ListSystem();
 	void WriteState();
